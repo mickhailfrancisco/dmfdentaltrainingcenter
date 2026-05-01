@@ -7,6 +7,19 @@
 
 @section('content')
 
+@php
+    $hasPaidPayment = $enrollment->payments->contains(fn ($p) => $p->status === 'paid');
+    $hasPendingBankTransfer = $enrollment->payments->contains(fn ($p) => $p->payment_method === 'bank_transfer' && $p->status === 'submitted');
+    $isPendingVerification = (! $hasPaidPayment) && $hasPendingBankTransfer;
+
+    $pendingInitialBankTransferPayment = $enrollment->payments->first(fn ($p) => $p->payment_method === 'bank_transfer'
+        && $p->purpose === \App\Models\Payment::PURPOSE_INITIAL
+        && $p->status === 'submitted');
+
+    $hasPendingBalanceBankTransfer = $enrollment->payments->contains(fn ($p) => $p->payment_method === 'bank_transfer'
+        && $p->purpose === \App\Models\Payment::PURPOSE_BALANCE
+        && $p->status === 'submitted');
+@endphp
 
 {{-- ── Progress Indicator ── --}}
 <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
@@ -75,10 +88,14 @@
             </div>
 
             <h1 class="text-3xl md:text-4xl font-extrabold text-white mb-2 relative z-10">
-                Enrollment Successful!
+                {{ $isPendingVerification ? 'Payment Submitted!' : 'Enrollment Successful!' }}
             </h1>
             <p class="text-brand-100/80 relative z-10 text-base">
-                Welcome to DMF Dental Training Center, {{ $enrollment->first_name }}! 🎉
+                @if($isPendingVerification)
+                    Please wait while our team verifies your bank transfer, {{ $enrollment->first_name }}.
+                @else
+                    Welcome to DMF Dental Training Center, {{ $enrollment->first_name }}! 🎉
+                @endif
             </p>
         </div>
 
@@ -106,9 +123,47 @@
                 ];
                 if ($enrollment->payment_type === 'downpayment') {
                     $bal = $enrollment->computed_balance_tuition_due;
+                    $hasPendingBalanceBankTransfer = $enrollment->payments->contains(fn ($p) => $p->payment_method === 'bank_transfer'
+                        && $p->purpose === \App\Models\Payment::PURPOSE_BALANCE
+                        && $p->status === 'submitted');
+
+                    $pendingInitialTuition = (int) ($pendingInitialBankTransferPayment?->tuition_amount ?? 0);
+                    if ($pendingInitialTuition <= 0 && $pendingInitialBankTransferPayment) {
+                        $pendingInitialTuition = max(
+                            0,
+                            (int) round(((int) ($pendingInitialBankTransferPayment->amount ?? 0)) / 100) - \App\Services\EnrollmentPricingService::CONVENIENCE_FEE_PESOS
+                        );
+                    }
+
+                    $expectedRemainingAfterVerification = $pendingInitialTuition > 0
+                        ? max(0, \App\Services\EnrollmentPricingService::applicableTuitionTotal($enrollment) - $pendingInitialTuition)
+                        : null;
+
+                    if ($pendingInitialBankTransferPayment && $pendingInitialTuition > 0) {
+                        array_splice($details, 3, 0, [
+                            [
+                                'label' => 'Downpayment (pending verification)',
+                                'value' => '₱' . number_format($pendingInitialTuition),
+                                'hint' => $expectedRemainingAfterVerification !== null
+                                    ? ('We received your downpayment proof of payment. Once verified, your remaining tuition will be ₱' . number_format($expectedRemainingAfterVerification) . '.')
+                                    : 'We received your downpayment proof of payment. Once verified, your tuition paid and remaining balance will update.',
+                                'icon' => 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+                            ],
+                        ]);
+                    }
+
+                    $remainingLabel = $hasPendingBalanceBankTransfer ? 'Remaining tuition (pending verification)' : 'Remaining tuition';
+                    $remainingValue = $hasPendingBalanceBankTransfer ? '₱0' : ('₱' . number_format($bal));
+                    $remainingHint = $hasPendingBalanceBankTransfer
+                        ? ('We received your balance proof of payment. Once verified, your remaining tuition will be settled (₱' . number_format($bal) . ').')
+                        : (($pendingInitialBankTransferPayment && $pendingInitialTuition > 0 && $expectedRemainingAfterVerification !== null)
+                            ? ('We received your downpayment proof of payment. Once verified, your remaining tuition will be ₱' . number_format($expectedRemainingAfterVerification) . '.')
+                            : null);
+                    $remainingHint = $remainingHint ?? ($bal > 0 ? 'Early-bird pricing applies if you complete payment on or before the discount end date. After that, the regular list price applies.' : null);
+
                     array_splice($details, 3, 0, [
                         ['label' => 'Tuition paid (cumulative)', 'value' => '₱' . number_format($enrollment->amount_paid_tuition), 'icon' => 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z'],
-                        ['label' => 'Remaining tuition', 'value' => '₱' . number_format($bal), 'hint' => $bal > 0 ? 'Early-bird pricing applies if you complete payment on or before the discount end date. After that, the regular list price applies.' : null, 'icon' => 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 5h.01M12 12h3m-3 4h.01M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z'],
+                        ['label' => $remainingLabel, 'value' => $remainingValue, 'hint' => $remainingHint, 'icon' => 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 5h.01M12 12h3m-3 4h.01M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z'],
                     ]);
                 }
                 if($enrollment->email) {
@@ -159,25 +214,8 @@
                 </div>
             </div>
 
-            @php
-                $payBalanceUrl = ($enrollment->payment_type === 'downpayment' && $enrollment->computed_balance_tuition_due > 0)
-                    ? \Illuminate\Support\Facades\URL::temporarySignedRoute('enroll.balance', now()->addYears(5), ['reference_number' => $enrollment->reference_number])
-                    : null;
-            @endphp
-
             {{-- Action buttons: flex row + flex-1 so all CTAs share the same height --}}
             <div class="flex flex-col sm:flex-row gap-3 pt-2 sm:items-stretch">
-                @if($payBalanceUrl)
-                <a href="{{ $payBalanceUrl }}"
-                   id="pay-balance-btn"
-                   class="success-cta order-first flex flex-1 flex-col items-center justify-center gap-2 px-4 py-4 min-h-[5.25rem] bg-accent-500 text-brand-950 font-extrabold rounded-xl shadow-sm hover:bg-accent-400 transition-all duration-200 text-center">
-                    <svg class="w-5 h-5 flex-shrink-0 opacity-90" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                    <span class="text-sm leading-snug">
-                        <span class="block">Pay remaining tuition</span>
-                        <span class="block text-xs font-extrabold mt-0.5 tracking-wide">₱{{ number_format($enrollment->computed_balance_tuition_due) }}</span>
-                    </span>
-                </a>
-                @endif
                 <a href="{{ url('/') }}"
                    id="back-home-btn"
                    class="success-cta flex flex-1 flex-col items-center justify-center gap-2 px-4 py-4 min-h-[5.25rem] bg-brand-600 text-white font-semibold rounded-xl shadow-sm hover:bg-brand-700 transition-all duration-200 text-center">

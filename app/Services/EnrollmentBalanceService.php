@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Exceptions\BalanceAlreadySettledException;
 use App\Models\Enrollment;
 use App\Models\Payment;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\URL;
 use RuntimeException;
 
@@ -32,6 +33,7 @@ final class EnrollmentBalanceService
     public function __construct(
         protected EnrollmentFinancialService $financialService,
         protected PaymongoService $paymongoService,
+        protected BankTransferService $bankTransferService,
     ) {}
 
     /**
@@ -104,7 +106,7 @@ final class EnrollmentBalanceService
      * Create a PayMongo checkout session for the remaining tuition balance.
      *
      * @param  string  $referenceNumber  Enrollment reference number from the signed route.
-     * @param  string  $paymentMethod  Validated payment method slug (gcash, qrph, etc.).
+     * @param  string  $paymentMethod  Validated payment method slug (card | bank_transfer).
      * @return array{checkout_url: string, reference_number: string, payment_id: int}
      *
      * @throws RuntimeException When checkout session creation fails or returns no URL.
@@ -113,8 +115,12 @@ final class EnrollmentBalanceService
      *
      * @created 2026-04-20
      */
-    public function startBalanceCheckout(string $referenceNumber, string $paymentMethod): array
+    public function startBalanceCheckout(string $referenceNumber, string $paymentMethod): RedirectResponse
     {
+        if ($paymentMethod === 'bank_transfer') {
+            return $this->bankTransferService->startBalanceBankTransfer($referenceNumber);
+        }
+
         $enrollment = Enrollment::where('reference_number', $referenceNumber)->firstOrFail();
 
         $this->paymongoService->syncPendingCheckoutSessionsForEnrollment($enrollment);
@@ -122,7 +128,6 @@ final class EnrollmentBalanceService
 
         $checkout = $this->paymongoService->createCheckoutSession(
             $enrollment,
-            $paymentMethod,
             Payment::PURPOSE_BALANCE,
         );
 
@@ -130,10 +135,6 @@ final class EnrollmentBalanceService
             throw new RuntimeException('Unable to initialize payment checkout. Please try again.');
         }
 
-        return [
-            'checkout_url' => $checkout['checkout_url'],
-            'reference_number' => $enrollment->reference_number,
-            'payment_id' => $checkout['payment']->id,
-        ];
+        return redirect()->away($checkout['checkout_url']);
     }
 }

@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Services\EnrollmentFinancialService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Payment extends Model
 {
@@ -37,6 +38,11 @@ class Payment extends Model
     public function enrollment(): BelongsTo
     {
         return $this->belongsTo(Enrollment::class);
+    }
+
+    public function bankTransferSubmission(): HasOne
+    {
+        return $this->hasOne(BankTransferSubmission::class)->with('files');
     }
 
     /**

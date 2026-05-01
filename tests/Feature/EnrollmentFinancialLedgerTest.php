@@ -74,7 +74,7 @@ class EnrollmentFinancialLedgerTest extends TestCase
         Payment::query()->create([
             'enrollment_id' => $enrollment->id,
             'purpose' => Payment::PURPOSE_INITIAL,
-            'payment_method' => 'gcash',
+            'payment_method' => 'card',
             'amount' => (5_000 + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
             'currency' => 'PHP',
             'tuition_amount' => 5_000,
@@ -90,6 +90,7 @@ class EnrollmentFinancialLedgerTest extends TestCase
         $this->assertSame(5_000, $enrollment->amount_paid_tuition);
         $this->assertSame(3_000, $enrollment->balance_tuition_due);
         $this->assertSame(3_000, $enrollment->computed_balance_tuition_due);
+        $this->assertSame('partially_paid', (string) ($enrollment->items()->first()?->status));
 
         Carbon::setTestNow();
     }
@@ -104,7 +105,7 @@ class EnrollmentFinancialLedgerTest extends TestCase
         Payment::query()->create([
             'enrollment_id' => $enrollment->id,
             'purpose' => Payment::PURPOSE_INITIAL,
-            'payment_method' => 'gcash',
+            'payment_method' => 'card',
             'amount' => (5_000 + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
             'currency' => 'PHP',
             'tuition_amount' => 5_000,
@@ -134,7 +135,7 @@ class EnrollmentFinancialLedgerTest extends TestCase
         Payment::query()->create([
             'enrollment_id' => $enrollment->id,
             'purpose' => Payment::PURPOSE_INITIAL,
-            'payment_method' => 'gcash',
+            'payment_method' => 'card',
             'amount' => (5_000 + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
             'currency' => 'PHP',
             'tuition_amount' => 0,
@@ -168,7 +169,7 @@ class EnrollmentFinancialLedgerTest extends TestCase
         Payment::query()->create([
             'enrollment_id' => $enrollment->id,
             'purpose' => Payment::PURPOSE_INITIAL,
-            'payment_method' => 'gcash',
+            'payment_method' => 'card',
             'amount' => ($enrollment->base_amount + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
             'currency' => 'PHP',
             'tuition_amount' => $enrollment->base_amount,
@@ -205,7 +206,7 @@ class EnrollmentFinancialLedgerTest extends TestCase
 
         $this->post(
             route('enroll.balance.pay', ['reference_number' => $enrollment->reference_number]),
-            ['payment_method' => 'gcash']
+            ['payment_method' => 'card']
         )->assertForbidden();
 
         Carbon::setTestNow();
@@ -245,7 +246,7 @@ class EnrollmentFinancialLedgerTest extends TestCase
         Payment::query()->create([
             'enrollment_id' => $enrollment->id,
             'purpose' => Payment::PURPOSE_INITIAL,
-            'payment_method' => 'gcash',
+            'payment_method' => 'card',
             'amount' => (5_000 + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
             'currency' => 'PHP',
             'tuition_amount' => 5_000,
@@ -257,7 +258,7 @@ class EnrollmentFinancialLedgerTest extends TestCase
         Payment::query()->create([
             'enrollment_id' => $enrollment->id,
             'purpose' => Payment::PURPOSE_BALANCE,
-            'payment_method' => 'gcash',
+            'payment_method' => 'card',
             'amount' => (3_000 + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
             'currency' => 'PHP',
             'tuition_amount' => 3_000,

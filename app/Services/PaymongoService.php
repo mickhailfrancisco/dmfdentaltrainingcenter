@@ -17,13 +17,13 @@ class PaymongoService
     ) {}
 
     /**
-     * Create checkout session from an existing enrollment.
+     * Create a card checkout session from an existing enrollment.
      *
      * @param  string  $purpose  Payment::PURPOSE_INITIAL | Payment::PURPOSE_BALANCE
      *
      * @throws RuntimeException
      */
-    public function createCheckoutSession(Enrollment $enrollment, string $paymentMethod, string $purpose = Payment::PURPOSE_INITIAL): array
+    public function createCheckoutSession(Enrollment $enrollment, string $purpose = Payment::PURPOSE_INITIAL): array
     {
         $purchasableName = (string) ($enrollment->purchasable_name_snapshot ?? 'Enrollment');
         $fee = EnrollmentPricingService::CONVENIENCE_FEE_PESOS;
@@ -55,7 +55,7 @@ class PaymongoService
                 'purpose' => $purpose,
             ],
             [
-                'payment_method' => $paymentMethod,
+                'payment_method' => 'card',
                 'amount' => (int) round($totalPesos * 100),
                 'currency' => 'PHP',
                 'status' => 'pending',
@@ -66,11 +66,7 @@ class PaymongoService
         $payload = [
             'data' => [
                 'attributes' => [
-                    'billing' => [
-                        'name' => $enrollment->full_name,
-                        'email' => $enrollment->email,
-                        'phone' => $enrollment->phone,
-                    ],
+                    'billing' => $this->buildCheckoutBilling($enrollment),
                     'send_email_receipt' => true,
                     'show_description' => true,
                     'show_line_items' => true,
@@ -89,18 +85,17 @@ class PaymongoService
                             'quantity' => 1,
                         ],
                     ],
-                    'payment_method_types' => [$paymentMethod],
+                    'payment_method_types' => ['card'],
                     'reference_number' => $enrollment->reference_number,
                     'success_url' => route('enroll.success', ['ref' => $enrollment->reference_number]),
                 ],
             ],
         ];
         $idempotencyKey = sprintf(
-            'enroll-%s-payment-%s-purpose-%s-method-%s',
+            'enroll-%s-payment-%s-purpose-%s',
             $enrollment->reference_number,
             (string) $payment->id,
-            $purpose,
-            $paymentMethod
+            $purpose
         );
 
         try {
@@ -117,7 +112,6 @@ class PaymongoService
             if (! $response->successful()) {
                 Log::error('PayMongo checkout session creation failed.', [
                     'reference_number' => $enrollment->reference_number,
-                    'payment_method' => $paymentMethod,
                     'idempotency_key' => $idempotencyKey,
                     'status' => $response->status(),
                     'body' => $response->json(),
@@ -142,7 +136,6 @@ class PaymongoService
         } catch (\Throwable $e) {
             Log::error('PayMongo checkout exception.', [
                 'reference_number' => $enrollment->reference_number,
-                'payment_method' => $paymentMethod,
                 'idempotency_key' => $idempotencyKey,
                 'error' => $e->getMessage(),
             ]);
@@ -185,7 +178,8 @@ class PaymongoService
             $paymentStatus = $paymentIntentAttributes['status'] ?? null;
             $latestPaymentId = $paymentIntentAttributes['payments'][0]['id'] ?? null;
 
-            $localStatus = $paymentStatus === 'succeeded' ? 'paid' : 'pending';
+            $normalizedStatus = strtolower((string) $paymentStatus);
+            $localStatus = in_array($normalizedStatus, ['succeeded', 'paid'], true) ? 'paid' : 'pending';
 
             $payment->update([
                 'paymongo_payment_intent_id' => $paymentIntentId,
@@ -400,5 +394,26 @@ class PaymongoService
         }
 
         return 'pending';
+    }
+
+    /**
+     * Billing details for PayMongo Checkout (card), including address prefill from enrollment.
+     *
+     * @return array{name: string, email: string, phone: string, address: array{line1: string, city: string, state: string, postal_code: string, country: string}}
+     */
+    private function buildCheckoutBilling(Enrollment $enrollment): array
+    {
+        return [
+            'name' => (string) $enrollment->full_name,
+            'email' => (string) $enrollment->email,
+            'phone' => (string) $enrollment->phone,
+            'address' => [
+                'line1' => (string) $enrollment->addr_street,
+                'city' => (string) $enrollment->addr_city,
+                'state' => (string) $enrollment->addr_province,
+                'postal_code' => (string) $enrollment->addr_zip,
+                'country' => 'PH',
+            ],
+        ];
     }
 }

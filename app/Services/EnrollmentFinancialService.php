@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Enums\EnrollmentStatus;
 use App\Models\Enrollment;
+use App\Models\EnrollmentItem;
 use App\Models\Payment;
 use Illuminate\Support\Facades\DB;
 
@@ -44,6 +45,12 @@ final class EnrollmentFinancialService
             $locked->balance_tuition_due = EnrollmentPricingService::balanceTuitionDue($locked);
             $locked->status = $this->resolveStatusFromLedger($locked);
             $locked->save();
+
+            EnrollmentItem::query()
+                ->where('enrollment_id', $locked->getKey())
+                ->update([
+                    'status' => (string) $locked->status->value,
+                ]);
         });
     }
 

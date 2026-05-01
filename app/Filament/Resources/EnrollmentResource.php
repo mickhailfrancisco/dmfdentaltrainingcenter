@@ -7,6 +7,7 @@ use App\Filament\Resources\EnrollmentResource\Pages;
 use App\Filament\Resources\EnrollmentResource\RelationManagers;
 use App\Models\Enrollment;
 use App\Models\Package;
+use App\Models\Payment;
 use App\Models\Program;
 use App\Models\User;
 use App\Support\PermissionCodes;
@@ -191,7 +192,24 @@ class EnrollmentResource extends Resource
                             Infolists\Components\TextEntry::make('status')
                                 ->badge()
                                 ->color(fn ($state): string|array => EnrollmentStatus::tryFromMixed($state)?->filamentColor() ?? 'gray')
-                                ->formatStateUsing(fn ($state): string => EnrollmentStatus::tryFromMixed($state)?->label() ?? strtoupper((string) $state))
+                                ->formatStateUsing(function ($state, Enrollment $record): string {
+                                    $enum = EnrollmentStatus::tryFromMixed($state);
+
+                                    if ($enum?->value === EnrollmentStatus::PENDING->value) {
+                                        $hasSubmittedInitialBankTransfer = Payment::query()
+                                            ->where('enrollment_id', $record->getKey())
+                                            ->where('purpose', Payment::PURPOSE_INITIAL)
+                                            ->where('payment_method', 'bank_transfer')
+                                            ->where('status', 'submitted')
+                                            ->exists();
+
+                                        if ($hasSubmittedInitialBankTransfer) {
+                                            return 'Pending verification';
+                                        }
+                                    }
+
+                                    return $enum?->label() ?? strtoupper((string) $state);
+                                })
                                 ->columnSpanFull()
                                 ->visible(fn (): bool => static::viewerCan(PermissionCodes::ENROLLMENT_DETAIL_PLAN_CHECKOUT)),
                             Infolists\Components\TextEntry::make('reference_number')
@@ -362,7 +380,24 @@ class EnrollmentResource extends Resource
                     ->badge()
                     ->alignment(Alignment::Start)
                     ->color(fn ($state): string|array => EnrollmentStatus::tryFromMixed($state)?->filamentColor() ?? 'gray')
-                    ->formatStateUsing(fn ($state): string => EnrollmentStatus::tryFromMixed($state)?->label() ?? strtoupper((string) $state))
+                    ->formatStateUsing(function ($state, Enrollment $record): string {
+                        $enum = EnrollmentStatus::tryFromMixed($state);
+
+                        if ($enum?->value === EnrollmentStatus::PENDING->value) {
+                            $hasSubmittedInitialBankTransfer = Payment::query()
+                                ->where('enrollment_id', $record->getKey())
+                                ->where('purpose', Payment::PURPOSE_INITIAL)
+                                ->where('payment_method', 'bank_transfer')
+                                ->where('status', 'submitted')
+                                ->exists();
+
+                            if ($hasSubmittedInitialBankTransfer) {
+                                return 'Pending verification';
+                            }
+                        }
+
+                        return $enum?->label() ?? strtoupper((string) $state);
+                    })
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('created_at')
@@ -455,24 +490,63 @@ class EnrollmentResource extends Resource
                     ]),
             ])
             ->actions([
-                Tables\Actions\Action::make('copyPayBalanceLink')
+                Tables\Actions\Action::make('copyPaymentLink')
                     ->label('Copy payment link')
                     ->icon('heroicon-m-clipboard-document')
                     ->iconButton()
                     ->color('warning')
-                    ->tooltip('Copy payment link for student to pay remaining tuition')
-                    ->visible(fn (Enrollment $record): bool => static::viewerCan(PermissionCodes::ENROLLMENT_ACTION_COPY_PAY_BALANCE_LINK)
-                        && $record->payment_type === 'downpayment'
-                        && (int) $record->amount_paid_tuition > 0
-                        && $record->computed_balance_tuition_due > 0)
-                    ->action(function (Enrollment $record, $livewire): void {
-                        $payUrl = URL::temporarySignedRoute(
-                            'enroll.balance',
-                            now()->addYears(5),
-                            ['reference_number' => $record->reference_number],
-                        );
+                    ->tooltip(function (Enrollment $record): string {
+                        if ((int) $record->amount_paid_tuition <= 0) {
+                            return 'Copy payment link for student to complete initial checkout';
+                        }
 
-                        $livewire->js('window.navigator.clipboard.writeText('.Js::from($payUrl).')');
+                        return 'Copy payment link for student to pay remaining tuition';
+                    })
+                    ->visible(function (Enrollment $record): bool {
+                        $hasSubmittedInitialBankTransfer = Payment::query()
+                            ->where('enrollment_id', $record->getKey())
+                            ->where('purpose', Payment::PURPOSE_INITIAL)
+                            ->where('payment_method', 'bank_transfer')
+                            ->where('status', 'submitted')
+                            ->exists();
+
+                        $needsInitial = (int) $record->amount_paid_tuition <= 0 && ! $hasSubmittedInitialBankTransfer;
+                        $needsBalance = $record->payment_type === 'downpayment'
+                            && (int) $record->amount_paid_tuition > 0
+                            && $record->computed_balance_tuition_due > 0;
+
+                        if (! ($needsInitial || $needsBalance)) {
+                            return false;
+                        }
+
+                        if ($needsInitial && static::viewerCan(PermissionCodes::ENROLLMENT_ACTION_COPY_PAY_BALANCE_LINK)) {
+                            return true;
+                        }
+
+                        if ($needsBalance && static::viewerCan(PermissionCodes::ENROLLMENT_ACTION_COPY_PAY_BALANCE_LINK)) {
+                            return true;
+                        }
+
+                        return false;
+                    })
+                    ->action(function (Enrollment $record, $livewire): void {
+                        $needsInitial = (int) $record->amount_paid_tuition <= 0;
+                        $purpose = $needsInitial ? Payment::PURPOSE_INITIAL : Payment::PURPOSE_BALANCE;
+
+                        // Always send the student to a method selection page.
+                        $url = $purpose === Payment::PURPOSE_BALANCE
+                            ? URL::temporarySignedRoute(
+                                'enroll.balance',
+                                now()->addYears(5),
+                                ['reference_number' => $record->reference_number],
+                            )
+                            : URL::temporarySignedRoute(
+                                'enroll.checkout',
+                                now()->addYears(5),
+                                ['reference_number' => $record->reference_number],
+                            );
+
+                        $livewire->js('window.navigator.clipboard.writeText('.Js::from($url).')');
 
                         Notification::make()
                             ->title('Payment link copied')

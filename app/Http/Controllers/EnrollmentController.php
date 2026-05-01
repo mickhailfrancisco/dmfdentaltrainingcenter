@@ -7,6 +7,7 @@ use App\Http\Requests\StoreEnrollmentRequest;
 use App\Models\Enrollment;
 use App\Models\Package;
 use App\Models\Program;
+use App\Services\BankTransferService;
 use App\Services\EnrollmentFinancialService;
 use App\Services\EnrollmentService;
 use App\Services\PaymongoService;
@@ -19,6 +20,7 @@ class EnrollmentController extends Controller
         protected EnrollmentService $enrollmentService,
         protected PaymongoService $paymongoService,
         protected EnrollmentFinancialService $enrollmentFinancialService,
+        protected BankTransferService $bankTransferService,
     ) {}
 
     /**
@@ -132,10 +134,13 @@ class EnrollmentController extends Controller
                 $request->session()->put('current_enrollment_id', $enrollment->getKey());
             }
 
-            $checkout = $this->paymongoService->createCheckoutSession(
-                $enrollment,
-                $request->validated('payment_method')
-            );
+            if ($request->validated('payment_method') === 'bank_transfer') {
+                $request->session()->put('latest_enrollment_ref', $enrollment->reference_number);
+
+                return $this->bankTransferService->startInitialBankTransfer($enrollment);
+            }
+
+            $checkout = $this->paymongoService->createCheckoutSession($enrollment);
 
             $request->session()->put('latest_enrollment_ref', $enrollment->reference_number);
             $request->session()->put('latest_payment_id', $checkout['payment']->id);

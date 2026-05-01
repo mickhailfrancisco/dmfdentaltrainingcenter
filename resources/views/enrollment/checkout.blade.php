@@ -1,7 +1,7 @@
 @extends('layouts.enrollment')
 
-@section('title', 'Pay Remaining Tuition — DMF Dental Training Center')
-@section('meta_description', 'Complete payment for your remaining program tuition.')
+@section('title', 'Complete Payment — DMF Dental Training Center')
+@section('meta_description', 'Resume your checkout and choose a payment method.')
 
 @section('content')
 <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16">
@@ -11,7 +11,7 @@
     </a>
 
     <div class="mb-8">
-        <h1 class="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight mb-2">Pay Remaining Tuition</h1>
+        <h1 class="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight mb-2">Resume Checkout</h1>
         <p class="text-gray-500">Reference <span class="font-mono font-semibold text-brand-700">{{ $enrollment->reference_number }}</span></p>
     </div>
 
@@ -34,11 +34,11 @@
                     </div>
                     <div class="flex justify-between py-1.5 border-b border-gray-50">
                         <span class="text-gray-400">Program</span>
-                        <span class="font-medium text-gray-800 text-right">{{ $purchasable_name }}</span>
+                        <span class="font-medium text-gray-800 text-right">{{ $enrollment->purchasable_name_snapshot ?? '—' }}</span>
                     </div>
                     <div class="flex justify-between py-1.5">
-                        <span class="text-gray-400">Tuition paid to date</span>
-                        <span class="font-medium text-gray-800">₱{{ number_format($enrollment->amount_paid_tuition) }}</span>
+                        <span class="text-gray-400">Plan</span>
+                        <span class="font-medium text-gray-800">{{ $enrollment->payment_type === 'downpayment' ? 'Downpayment' : 'Full Payment' }}</span>
                     </div>
                 </div>
             </div>
@@ -57,8 +57,8 @@
                         </span>
                     </div>
 
-                    <label class="pay-opt block rounded-xl border-2 border-emerald-100 p-3.5 bg-white" for="bal-pay-card">
-                        <input type="radio" id="bal-pay-card" name="payment_method" value="card" class="sr-only" checked>
+                    <label class="pay-opt block rounded-xl border-2 border-emerald-100 p-3.5 bg-white" for="resume-pay-card">
+                        <input type="radio" id="resume-pay-card" name="payment_method" value="card" class="sr-only" checked>
                         <div class="flex items-center gap-3">
                             <span class="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center bg-emerald-50">
                                 <svg class="w-6 h-6 text-emerald-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
@@ -75,8 +75,8 @@
                 <div class="rounded-2xl border border-slate-200 bg-slate-50/50 p-4">
                     <p class="text-sm font-bold text-gray-800 mb-3">Bank Transfer</p>
 
-                    <label class="pay-opt block rounded-xl border-2 border-slate-200 p-3.5 bg-white" for="bal-pay-bank-transfer">
-                        <input type="radio" id="bal-pay-bank-transfer" name="payment_method" value="bank_transfer" class="sr-only">
+                    <label class="pay-opt block rounded-xl border-2 border-slate-200 p-3.5 bg-white" for="resume-pay-bank-transfer">
+                        <input type="radio" id="resume-pay-bank-transfer" name="payment_method" value="bank_transfer" class="sr-only">
                         <div class="flex items-center gap-3">
                             <span class="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center bg-slate-100">
                                 <svg class="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M4 11h16M5 21h14a2 2 0 002-2v-8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
@@ -99,24 +99,19 @@
                 <h2 class="text-base font-bold text-gray-700 mb-5">Summary</h2>
                 <div class="space-y-3 text-sm mb-4">
                     <div class="flex justify-between">
-                        <span class="text-gray-500">Remaining tuition</span>
-                        <span class="font-semibold text-gray-800">₱{{ number_format($balance_tuition) }}</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-500">Payment processing fee</span>
-                        <span class="font-semibold text-gray-800">₱{{ number_format($convenience_fee) }}</span>
-                    </div>
-                    <div class="border-t border-gray-100 pt-3 flex justify-between items-center">
-                        <span class="font-bold text-gray-800">Total</span>
-                        <span class="font-extrabold text-brand-700 text-2xl">₱{{ number_format($total_due) }}</span>
+                        <span class="text-gray-500">Amount</span>
+                        <span class="font-semibold text-gray-800">₱{{ number_format($enrollment->total_amount) }}</span>
                     </div>
                 </div>
-                <button type="submit" class="flex items-center justify-center gap-2 w-full px-5 py-3.5 bg-accent-500 text-white font-extrabold rounded-xl shadow-md hover:bg-accent-400 hover:text-white transition-all text-base">
-                    Pay remaining tuition
+                <button type="submit" class="flex items-center justify-center gap-2 w-full px-5 py-3.5 bg-accent-500 text-brand-950 font-extrabold rounded-xl shadow-md hover:bg-accent-400 transition-all text-base">
+                    Continue to payment
                 </button>
-                <p class="text-[10px] text-gray-400 text-center mt-3">Early-bird pricing applies if you complete this payment on or before the discount end date. After that date, the regular list price applies.</p>
+                <p class="text-[10px] text-gray-400 text-center mt-3">
+                    If you selected Card, you will be redirected to PayMongo's secure checkout. Bank transfers require verification.
+                </p>
             </div>
         </div>
     </form>
 </div>
 @endsection
+

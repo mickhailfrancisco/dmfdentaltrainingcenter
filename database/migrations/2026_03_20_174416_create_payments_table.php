@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('paymongo_payment_intent_id')->nullable();
             $table->string('paymongo_payment_id')->nullable();
 
-            $table->string('payment_method', 20)->nullable();   // gcash | maya | grabpay | card
+            $table->string('payment_method', 20)->nullable();   // card | bank_transfer | legacy rows may hold older Paymongo slugs
             $table->unsignedInteger('amount');
             $table->string('currency', 3)->default('PHP');
 

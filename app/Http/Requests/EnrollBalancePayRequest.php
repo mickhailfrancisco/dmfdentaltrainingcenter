@@ -16,7 +16,7 @@ class EnrollBalancePayRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'payment_method' => 'required|in:shopee_pay,qrph,gcash,paymaya',
+            'payment_method' => 'required|in:card,bank_transfer',
         ];
     }
 }

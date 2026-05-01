@@ -76,7 +76,7 @@ class EnrollmentBalanceController extends Controller
     public function pay(EnrollBalancePayRequest $request, string $reference_number): RedirectResponse
     {
         try {
-            $checkout = $this->balanceService->startBalanceCheckout(
+            return $this->balanceService->startBalanceCheckout(
                 $reference_number,
                 $request->validated('payment_method'),
             );
@@ -89,10 +89,5 @@ class EnrollmentBalanceController extends Controller
             return redirect()->back()
                 ->with('error', 'Payment gateway is temporarily unavailable. Please try again.');
         }
-
-        $request->session()->put('latest_enrollment_ref', $checkout['reference_number']);
-        $request->session()->put('latest_payment_id', $checkout['payment_id']);
-
-        return redirect()->away($checkout['checkout_url']);
     }
 }
