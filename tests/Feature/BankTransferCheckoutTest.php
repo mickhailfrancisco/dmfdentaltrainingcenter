@@ -82,6 +82,11 @@ class BankTransferCheckoutTest extends TestCase
         $showResponse = $this->get($showUrl);
         $showResponse->assertOk();
         $showResponse->assertDontSee('Address');
+        $showResponse->assertSee('Show QR code to scan', false);
+        $showResponse->assertSee('bank-qr-modal', false);
+        $showResponse->assertSee('Payment Summary', false);
+        $showResponse->assertSee('Total to pay', false);
+        $showResponse->assertSee('Tuition (this payment)', false);
 
         $submitUrl = (string) $showResponse->viewData('submit_url');
         $this->assertNotSame('', $submitUrl);
