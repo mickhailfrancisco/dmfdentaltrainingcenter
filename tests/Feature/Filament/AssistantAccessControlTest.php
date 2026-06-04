@@ -8,10 +8,12 @@ use App\Enums\EnrollmentStatus;
 use App\Enums\UserRole;
 use App\Filament\Resources\AssistantUserResource;
 use App\Filament\Resources\AssistantUserResource\Pages\CreateAssistantUser;
+use App\Filament\Resources\AssistantUserResource\Pages\EditAssistantUser;
 use App\Filament\Resources\AssistantUserResource\Pages\ListAssistantUsers;
 use App\Filament\Resources\EnrollmentResource;
 use App\Filament\Resources\EnrollmentResource\Pages\ListEnrollments;
 use App\Filament\Resources\EnrollmentResource\Pages\ViewEnrollment;
+use App\Filament\Resources\EnrollmentResource\RelationManagers\PaymentsRelationManager;
 use App\Filament\Resources\PackageResource;
 use App\Models\Enrollment;
 use App\Models\Permission;
@@ -227,6 +229,7 @@ class AssistantAccessControlTest extends TestCase
 
         Livewire::test(ListEnrollments::class)
             ->assertSuccessful()
+            ->loadTable()
             ->assertCanSeeTableRecords([$enrollment]);
     }
 
@@ -239,6 +242,7 @@ class AssistantAccessControlTest extends TestCase
 
         Livewire::test(ListEnrollments::class)
             ->assertSuccessful()
+            ->loadTable()
             ->assertCanSeeTableRecords([$enrollment]);
     }
 
@@ -270,6 +274,7 @@ class AssistantAccessControlTest extends TestCase
         $this->actingAs($assistant);
 
         Livewire::test(ListEnrollments::class)
+            ->loadTable()
             ->searchTable($enrollment->first_name)
             ->assertCanSeeTableRecords([$enrollment]);
     }
@@ -296,6 +301,7 @@ class AssistantAccessControlTest extends TestCase
 
         Livewire::test(ListEnrollments::class)
             ->assertSuccessful()
+            ->loadTable()
             ->assertCanSeeTableRecords([$enrollment]);
     }
 
@@ -331,7 +337,114 @@ class AssistantAccessControlTest extends TestCase
             ->assertSuccessful();
     }
 
+    public function test_assistant_with_payments_permission_can_open_payments_relation_manager(): void
+    {
+        $assistant = User::factory()->assistant()->create();
+        $assistant->syncPermissionsByCode([
+            PermissionCodes::ENROLLMENT_RELATION_PAYMENTS,
+        ]);
+        $enrollment = $this->makeEnrollment();
+
+        $this->actingAs($assistant);
+
+        $this->assertTrue(PaymentsRelationManager::canViewForRecord($enrollment, ViewEnrollment::class));
+
+        Livewire::test(PaymentsRelationManager::class, [
+            'ownerRecord' => $enrollment,
+            'pageClass' => ViewEnrollment::class,
+        ])
+            ->assertSuccessful()
+            ->loadTable()
+            ->assertTableColumnVisible('paid_at');
+    }
+
+    public function test_assistant_without_payments_permission_cannot_view_payments_relation_manager(): void
+    {
+        $assistant = User::factory()->assistant()->create();
+        $assistant->syncPermissionsByCode([
+            PermissionCodes::ENROLLMENT_DETAIL_APPLICANT_PROFILE,
+        ]);
+        $enrollment = $this->makeEnrollment();
+
+        $this->actingAs($assistant);
+
+        $this->assertFalse(PaymentsRelationManager::canViewForRecord($enrollment, ViewEnrollment::class));
+    }
+
+    public function test_assistant_with_verify_permission_can_view_payments_tab_without_payments_tab_permission(): void
+    {
+        $assistant = User::factory()->assistant()->create();
+        $assistant->syncPermissionsByCode([
+            PermissionCodes::ENROLLMENT_DETAIL_TUITION_BALANCE,
+            PermissionCodes::ENROLLMENT_ACTION_VERIFY_BANK_TRANSFER,
+        ]);
+        $enrollment = $this->makeEnrollment();
+
+        $this->actingAs($assistant);
+
+        $this->assertTrue(PaymentsRelationManager::canViewForRecord($enrollment, ViewEnrollment::class));
+
+        Livewire::test(PaymentsRelationManager::class, [
+            'ownerRecord' => $enrollment,
+            'pageClass' => ViewEnrollment::class,
+        ])
+            ->assertSuccessful()
+            ->loadTable()
+            ->assertTableColumnVisible('paid_at');
+    }
+
+    public function test_assistant_with_refresh_payment_totals_permission_sees_action(): void
+    {
+        $assistant = User::factory()->assistant()->create();
+        $assistant->syncPermissionsByCode([
+            PermissionCodes::ENROLLMENT_DETAIL_PLAN_CHECKOUT,
+            PermissionCodes::ENROLLMENT_ACTION_REFRESH_PAYMENT_TOTALS,
+        ]);
+        $enrollment = $this->makeEnrollment();
+
+        $this->actingAs($assistant);
+
+        Livewire::test(ViewEnrollment::class, ['record' => $enrollment->getKey()])
+            ->assertActionVisible('refreshPaymentTotals');
+    }
+
+    public function test_assistant_without_refresh_payment_totals_permission_does_not_see_action(): void
+    {
+        $assistant = User::factory()->assistant()->create();
+        $assistant->syncPermissionsByCode([
+            PermissionCodes::ENROLLMENT_DETAIL_PLAN_CHECKOUT,
+        ]);
+        $enrollment = $this->makeEnrollment();
+
+        $this->actingAs($assistant);
+
+        Livewire::test(ViewEnrollment::class, ['record' => $enrollment->getKey()])
+            ->assertSuccessful()
+            ->assertDontSee('Refresh payment totals');
+    }
+
     // ── Catalog bulk delete vs granular permissions ──────────────────────────
+
+    public function test_assistant_partial_permissions_see_only_allowed_enrollment_sections(): void
+    {
+        $assistant = User::factory()->assistant()->create();
+        $assistant->syncPermissionsByCode([
+            PermissionCodes::ENROLLMENT_DETAIL_APPLICANT_PROFILE,
+            PermissionCodes::ENROLLMENT_DETAIL_ACADEMIC,
+            PermissionCodes::ENROLLMENT_DETAIL_TUITION_BALANCE,
+        ]);
+        $enrollment = $this->makeEnrollment();
+
+        $this->actingAs($assistant);
+
+        Livewire::test(ViewEnrollment::class, ['record' => $enrollment->getKey()])
+            ->assertSuccessful()
+            ->assertSee('Applicant Profile')
+            ->assertSee('Academic Background')
+            ->assertSee('Tuition & balance')
+            ->assertDontSee('Plan &amp; checkout', false)
+            ->assertDontSee('Home Address');
+    }
 
     public function test_assistant_with_packages_view_only_cannot_catalog_delete(): void
     {
@@ -357,6 +470,65 @@ class AssistantAccessControlTest extends TestCase
         $this->actingAs($assistant);
 
         $this->assertTrue(PackageResource::currentUserCanCatalogAction('delete'));
+    }
+
+    public function test_assistant_without_export_permission_does_not_see_export_action(): void
+    {
+        $assistant = User::factory()->assistant()->create();
+        $assistant->syncPermissionsByCode([
+            PermissionCodes::ENROLLMENT_DETAIL_APPLICANT_PROFILE,
+        ]);
+        $this->makeEnrollment();
+
+        $this->actingAs($assistant);
+
+        Livewire::test(ListEnrollments::class)
+            ->assertSuccessful()
+            ->assertDontSee('Export CSV');
+    }
+
+    public function test_assistant_with_export_permission_sees_export_action(): void
+    {
+        $assistant = User::factory()->assistant()->create();
+        $assistant->syncPermissionsByCode([
+            PermissionCodes::ENROLLMENT_LIST_EXPORT,
+        ]);
+        $this->makeEnrollment();
+
+        $this->actingAs($assistant);
+
+        Livewire::test(ListEnrollments::class)
+            ->assertSuccessful()
+            ->assertActionExists('export')
+            ->assertSee('Export CSV');
+    }
+
+    public function test_edit_assistant_persists_verify_bank_transfer_permission_when_row_was_missing(): void
+    {
+        Permission::query()
+            ->where('code', PermissionCodes::ENROLLMENT_ACTION_VERIFY_BANK_TRANSFER)
+            ->delete();
+
+        $admin = $this->makeAdmin();
+        $assistant = User::factory()->assistant()->create();
+
+        $this->actingAs($admin);
+
+        Livewire::test(EditAssistantUser::class, ['record' => $assistant->getKey()])
+            ->fillForm([
+                'perm_enrollment_tools' => [
+                    PermissionCodes::ENROLLMENT_ACTION_VERIFY_BANK_TRANSFER,
+                ],
+            ])
+            ->call('save')
+            ->assertNotified();
+
+        $assistant->refresh();
+
+        $this->assertDatabaseHas('permissions', [
+            'code' => PermissionCodes::ENROLLMENT_ACTION_VERIFY_BANK_TRANSFER,
+        ]);
+        $this->assertTrue($assistant->hasPermission(PermissionCodes::ENROLLMENT_ACTION_VERIFY_BANK_TRANSFER));
     }
 
     // ── AssistantUserResource static authorization ────────────────────────────

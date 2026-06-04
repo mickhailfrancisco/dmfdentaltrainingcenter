@@ -65,13 +65,15 @@ class EnrollmentService
         $list = (int) $purchasable->price_full;
         $early = $purchasable->price_early !== null ? (int) $purchasable->price_early : null;
         $deadline = $purchasable->early_deadline;
+        $early2 = $purchasable->price_early_2 !== null ? (int) $purchasable->price_early_2 : null;
+        $deadline2 = $purchasable->early_deadline_2;
         $dpSnapshot = (int) $purchasable->downpayment_amount;
 
-        $discountAmount = 0;
+        $activePrice = (int) $purchasable->active_price;
+        $discountAmount = max(0, $list - $activePrice);
         $discountLabel = null;
-        if ($early !== null && $deadline !== null && $purchasable->isEarlyBirdActive()) {
-            $discountAmount = max(0, $list - $early);
-            $discountLabel = 'Early bird';
+        if ($discountAmount > 0) {
+            $discountLabel = $purchasable->isFirstEarlyBirdActive() ? 'Early bird' : 'Early bird (2nd)';
         }
 
         $facebookMessengerName = $data['facebook_messenger_name'] ?? $data['facebook'] ?? null;
@@ -119,6 +121,8 @@ class EnrollmentService
             'tuition_list_amount' => $list,
             'tuition_price_early' => $early,
             'tuition_early_deadline' => $deadline,
+            'tuition_price_early_2' => $early2,
+            'tuition_early_deadline_2' => $deadline2,
             'tuition_price_dp' => $dpSnapshot,
             'tuition_discount_amount' => $discountAmount,
             'tuition_discount_label' => $discountLabel,

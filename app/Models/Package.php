@@ -4,12 +4,18 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\AssignsCatalogSortOrder;
+use App\Models\Concerns\SyncsCatalogCategoryString;
+use App\Support\Filament\CatalogOptionsCache;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Package extends Model
 {
+    use AssignsCatalogSortOrder;
+    use SyncsCatalogCategoryString;
+
     protected $fillable = [
         'name',
         'slug',
@@ -19,6 +25,8 @@ class Package extends Model
         'price_full',
         'price_early',
         'early_deadline',
+        'price_early_2',
+        'early_deadline_2',
         'early_bird_label',
         'is_active',
         'sort_order',
@@ -26,31 +34,82 @@ class Package extends Model
 
     protected $casts = [
         'early_deadline' => 'date',
+        'early_deadline_2' => 'date',
         'is_active' => 'boolean',
     ];
+
+    protected static function booted(): void
+    {
+        static::saved(fn () => CatalogOptionsCache::forgetAll());
+        static::deleted(fn () => CatalogOptionsCache::forgetAll());
+    }
 
     public function categoryModel(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'category_id');
     }
 
+    public function getCategoryLabelAttribute(): string
+    {
+        return $this->categoryModel?->name ?: (string) $this->category;
+    }
+
     public function programs(): BelongsToMany
     {
         return $this->belongsToMany(Program::class, 'package_program', 'package_id', 'program_id')
             ->withPivot(['sort_order'])
-            ->orderBy('package_program.sort_order');
+            ->orderBy('package_program.sort_order')
+            ->orderBy('programs.name');
     }
 
-    public function isEarlyBirdActive(): bool
+    /**
+     * @param  list<int|string>  $programIds
+     */
+    public function syncProgramsSortOrder(array $programIds): void
+    {
+        $sync = [];
+
+        foreach (array_values($programIds) as $index => $programId) {
+            $sync[(int) $programId] = ['sort_order' => ($index + 1) * 10];
+        }
+
+        $this->programs()->sync($sync);
+    }
+
+    public function isFirstEarlyBirdActive(): bool
     {
         return $this->price_early !== null
             && $this->early_deadline !== null
             && now()->timezone('Asia/Manila')->startOfDay()->lte($this->early_deadline);
     }
 
+    public function isSecondEarlyBirdActive(): bool
+    {
+        if ($this->isFirstEarlyBirdActive()) {
+            return false;
+        }
+
+        return $this->price_early_2 !== null
+            && $this->early_deadline_2 !== null
+            && now()->timezone('Asia/Manila')->startOfDay()->lte($this->early_deadline_2);
+    }
+
+    public function isEarlyBirdActive(): bool
+    {
+        return $this->isFirstEarlyBirdActive() || $this->isSecondEarlyBirdActive();
+    }
+
     public function getActivePriceAttribute(): int
     {
-        return $this->isEarlyBirdActive() ? (int) $this->price_early : (int) $this->price_full;
+        if ($this->isFirstEarlyBirdActive()) {
+            return (int) $this->price_early;
+        }
+
+        if ($this->isSecondEarlyBirdActive()) {
+            return (int) $this->price_early_2;
+        }
+
+        return (int) $this->price_full;
     }
 
     public function getDownpaymentAmountAttribute(): int

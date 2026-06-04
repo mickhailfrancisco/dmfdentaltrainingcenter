@@ -42,11 +42,6 @@ class CategoryResource extends Resource
                         ->maxLength(255)
                         ->unique(ignoreRecord: true),
 
-                    Forms\Components\TextInput::make('sort_order')
-                        ->numeric()
-                        ->default(0)
-                        ->minValue(0),
-
                     Forms\Components\Toggle::make('is_active')
                         ->default(true),
                 ])->columns(2),
@@ -68,16 +63,16 @@ class CategoryResource extends Resource
                 Tables\Columns\IconColumn::make('is_active')
                     ->boolean()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('sort_order')
-                    ->sortable(),
                 Tables\Columns\TextColumn::make('updated_at')
                     ->since()
                     ->label('Updated')
                     ->sortable(),
             ])
-            ->defaultSort('sort_order')
+            ->defaultSort('name')
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->authorize(fn (): bool => static::currentUserCanCatalogAction('delete')),
             ])
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make()

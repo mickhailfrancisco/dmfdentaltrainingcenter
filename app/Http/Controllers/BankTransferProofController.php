@@ -18,8 +18,17 @@ class BankTransferProofController extends Controller
         $user = Auth::user();
         abort_unless($user, 403);
 
-        if (! $user->isAdmin() && ! $user->hasPermission(PermissionCodes::ENROLLMENT_RELATION_PAYMENTS)) {
-            abort(403);
+        if (! $user->isAdmin()) {
+            $mayView = false;
+
+            foreach (PermissionCodes::enrollmentPaymentsTabAccessCodes() as $code) {
+                if ($user->hasPermission($code)) {
+                    $mayView = true;
+                    break;
+                }
+            }
+
+            abort_unless($mayView, 403);
         }
 
         $slot = $slot ?: BankTransferSubmissionFile::SLOT_PHOTO_1;

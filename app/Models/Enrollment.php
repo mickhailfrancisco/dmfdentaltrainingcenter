@@ -38,6 +38,8 @@ class Enrollment extends Model
         // Tuition snapshot & ledger
         'tuition_list_amount',
         'tuition_price_early',
+        'tuition_price_early_2',
+        'tuition_early_deadline_2',
         'tuition_early_deadline',
         'tuition_price_dp',
         'tuition_discount_amount',
@@ -50,6 +52,7 @@ class Enrollment extends Model
         'birthday' => 'date',
         'status' => EnrollmentStatus::class,
         'tuition_early_deadline' => 'date',
+        'tuition_early_deadline_2' => 'date',
     ];
 
     /* ── Relationships ─────────────────────────────────────────── */

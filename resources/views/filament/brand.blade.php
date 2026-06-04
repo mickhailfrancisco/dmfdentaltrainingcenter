@@ -14,9 +14,7 @@
         background: transparent !important;
         box-shadow: none !important;
         border: none !important;
-        max-width: 72rem !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
+        width: 100% !important;
     }
 
     /* Filament hides logo wrapper below lg; keep visible (same block as landing on mobile) */

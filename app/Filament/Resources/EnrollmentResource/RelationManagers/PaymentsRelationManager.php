@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\EnrollmentResource\RelationManagers;
 
+use App\Models\Enrollment;
 use App\Services\BankTransferService;
 use App\Support\PermissionCodes;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
+use Filament\Tables\Columns\TextColumn\TextColumnSize;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 
@@ -32,7 +35,13 @@ class PaymentsRelationManager extends RelationManager
             return true;
         }
 
-        return $user->hasPermission(PermissionCodes::ENROLLMENT_RELATION_PAYMENTS);
+        foreach (PermissionCodes::enrollmentPaymentsTabAccessCodes() as $code) {
+            if ($user->hasPermission($code)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public static function canCreateForRecord(Model $ownerRecord, string $pageClass): bool
@@ -42,19 +51,30 @@ class PaymentsRelationManager extends RelationManager
 
     public function table(Table $table): Table
     {
+        /** @var Enrollment $owner */
+        $owner = $this->getOwnerRecord();
+
+        $tuitionPaid = (int) $owner->amount_paid_tuition;
+        $remaining = (int) $owner->computed_balance_tuition_due;
+
         return $table
-            ->modifyQueryUsing(fn ($query) => $query->with(['enrollment', 'bankTransferSubmission']))
+            ->description(sprintf(
+                'Tuition paid: ₱%s · Remaining: ₱%s',
+                number_format($tuitionPaid),
+                number_format($remaining),
+            ))
+            ->modifyQueryUsing(fn ($query) => $query->with([
+                'bankTransferSubmission' => fn ($submissionQuery) => $submissionQuery->with('files'),
+            ]))
             ->recordTitleAttribute('purpose')
             ->columns([
-                Tables\Columns\TextColumn::make('enrollment.reference_number')
-                    ->label('Reference #')
-                    ->fontFamily('mono')
-                    ->copyable(),
                 Tables\Columns\TextColumn::make('purpose')
+                    ->label('Purpose')
                     ->badge()
+                    ->size(TextColumnSize::Small)
                     ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'initial' => 'First checkout (enrollment)',
-                        'balance' => 'Balance tuition',
+                        'initial' => 'First payment',
+                        'balance' => 'Balance',
                         default => $state,
                     })
                     ->color(fn (string $state): string => match ($state) {
@@ -63,13 +83,19 @@ class PaymentsRelationManager extends RelationManager
                         default => 'gray',
                     }),
                 Tables\Columns\TextColumn::make('payment_method')
+                    ->label('Method')
+                    ->size(TextColumnSize::Small)
                     ->placeholder('—')
                     ->html()
                     ->formatStateUsing(function (?string $state, $record): string {
-                        $method = (string) ($state ?? '—');
+                        $methodLabel = match ((string) ($state ?? '')) {
+                            'bank_transfer' => 'Bank transfer',
+                            'card' => 'Card',
+                            default => (string) ($state ?? '—'),
+                        };
 
-                        if ($method !== 'bank_transfer') {
-                            return e($method);
+                        if ((string) ($state ?? '') !== 'bank_transfer') {
+                            return e($methodLabel);
                         }
 
                         $channel = (string) ($record->bankTransferSubmission?->channel_code ?? '');
@@ -85,36 +111,20 @@ class PaymentsRelationManager extends RelationManager
 
                         return sprintf(
                             '<div class="leading-tight">%s<div class="text-xs text-gray-500 mt-0.5">%s</div></div>',
-                            e($method),
+                            e($methodLabel),
                             $subline,
                         );
                     }),
                 Tables\Columns\TextColumn::make('bankTransferSubmission.reference_number')
-                    ->label('Transfer Ref')
+                    ->label('Ref #')
                     ->placeholder('—')
-                    ->toggleable()
-                    ->visible(fn ($record): bool => (string) ($record->payment_method ?? '') === 'bank_transfer'),
-                Tables\Columns\TextColumn::make('bankTransferSubmission.channel_code')
-                    ->label('Channel')
-                    ->badge()
-                    ->formatStateUsing(fn (?string $state): string => match ($state) {
-                        'bdo' => 'BDO',
-                        'bpi' => 'BPI',
-                        'chinabank' => 'ChinaBank',
-                        'palawan_express' => 'Palawan Express',
-                        default => $state ?: '—',
-                    })
-                    ->color(fn (?string $state): string => match ($state) {
-                        'palawan_express' => 'info',
-                        'bdo', 'bpi', 'chinabank' => 'gray',
-                        default => 'gray',
-                    })
-                    ->toggleable()
-                    ->visible(fn ($record): bool => (string) ($record->payment_method ?? '') === 'bank_transfer'),
+                    ->size(TextColumnSize::Small),
                 Tables\Columns\TextColumn::make('tuition_amount')
-                    ->label('Tuition (PHP)')
+                    ->label('Amount')
+                    ->size(TextColumnSize::Small)
                     ->money('PHP'),
                 Tables\Columns\TextColumn::make('status')
+                    ->size(TextColumnSize::Small)
                     ->badge()
                     ->formatStateUsing(fn (string $state): string => ucfirst($state))
                     ->color(fn (string $state): string => match ($state) {
@@ -124,18 +134,21 @@ class PaymentsRelationManager extends RelationManager
                         default => 'gray',
                     }),
                 Tables\Columns\TextColumn::make('paid_at')
-                    ->dateTime(null, config('app.display_timezone'))
+                    ->label('Paid at')
+                    ->size(TextColumnSize::Small)
+                    ->html()
+                    ->formatStateUsing(fn ($state): string => self::formatTimestampCell($state))
                     ->sortable(),
                 Tables\Columns\TextColumn::make('bankTransferSubmission.submitted_at')
                     ->label('Submitted at')
-                    ->dateTime(null, config('app.display_timezone'))
-                    ->toggleable()
-                    ->visible(fn ($record): bool => (string) ($record->payment_method ?? '') === 'bank_transfer'),
+                    ->size(TextColumnSize::Small)
+                    ->html()
+                    ->formatStateUsing(fn ($state): string => self::formatTimestampCell($state)),
                 Tables\Columns\TextColumn::make('bankTransferSubmission.verified_at')
                     ->label('Verified at')
-                    ->dateTime(null, config('app.display_timezone'))
-                    ->toggleable()
-                    ->visible(fn ($record): bool => (string) ($record->payment_method ?? '') === 'bank_transfer'),
+                    ->size(TextColumnSize::Small)
+                    ->html()
+                    ->formatStateUsing(fn ($state): string => self::formatTimestampCell($state)),
             ])
             ->actions([
                 Tables\Actions\Action::make('viewProof')
@@ -152,7 +165,6 @@ class PaymentsRelationManager extends RelationManager
                     ->modalCancelActionLabel('Close')
                     ->modalWidth('7xl')
                     ->modalContent(function ($record) {
-                        $path = (string) $record->bankTransferSubmission->proof_path;
                         $url1 = route('admin.bank-transfer-submissions.proof', [
                             'submission' => $record->bankTransferSubmission->getKey(),
                             'slot' => 'photo_1',
@@ -165,7 +177,7 @@ class PaymentsRelationManager extends RelationManager
                         return view('filament.modals.bank-transfer-proof', [
                             'proofUrl1' => $url1,
                             'proofUrl2' => $url2,
-                            'referenceNumber' => (string) ($record->enrollment?->reference_number ?? ''),
+                            'referenceNumber' => (string) ($this->getOwnerRecord()->reference_number ?? ''),
                             'hasPhoto2' => (bool) optional($record->bankTransferSubmission)->files?->contains(fn ($f) => (string) ($f->slot ?? '') === 'photo_2'),
                         ]);
                     }),
@@ -222,13 +234,29 @@ class PaymentsRelationManager extends RelationManager
                             ->send();
                     })
                     ->after(function ($livewire): void {
-                        // Force the parent page (infolist/cards) to reflect new ledger + status immediately.
                         if (method_exists($livewire, 'js')) {
                             $livewire->js('window.location.reload()');
                         }
                     }),
             ])
             ->defaultSort('paid_at', 'desc')
-            ->paginated(false);
+            ->searchable(false)
+            ->filters([])
+            ->paginated([10, 25, 50]);
+    }
+
+    private static function formatTimestampCell(mixed $state): string
+    {
+        if (blank($state)) {
+            return '—';
+        }
+
+        $timestamp = Carbon::parse($state)->timezone(config('app.display_timezone'));
+
+        return sprintf(
+            '<div class="leading-tight whitespace-nowrap"><div>%s</div><div class="text-xs text-gray-500">%s</div></div>',
+            e($timestamp->format('M j, Y')),
+            e($timestamp->format('g:i A')),
+        );
     }
 }

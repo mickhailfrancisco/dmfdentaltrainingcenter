@@ -1,7 +1,7 @@
 <x-filament::icon-button
     color="gray"
     icon="heroicon-m-information-circle"
-    tooltip="Search tips: Reference #, Student name, Email, Program"
+    tooltip="Search tips: Reference #, Student name, Email, Program enrolled"
     class="dmf-filament-help-icon"
 />
 

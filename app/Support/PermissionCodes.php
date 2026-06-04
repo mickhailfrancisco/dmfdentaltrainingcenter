@@ -27,6 +27,8 @@ final class PermissionCodes
 
     public const ENROLLMENT_LIST_FIRST_PAYMENT = 'enrollment.list.first_payment';
 
+    public const ENROLLMENT_LIST_EXPORT = 'enrollment.list.export';
+
     public const ENROLLMENT_ACTION_COPY_PAY_BALANCE_LINK = 'enrollment.action.copy_pay_balance_link';
 
     public const ENROLLMENT_ACTION_COPY_PAY_INITIAL_LINK = 'enrollment.action.copy_pay_initial_link';
@@ -34,6 +36,8 @@ final class PermissionCodes
     public const ENROLLMENT_ACTION_COPY_BANK_TRANSFER_LINK = 'enrollment.action.copy_bank_transfer_link';
 
     public const ENROLLMENT_ACTION_VERIFY_BANK_TRANSFER = 'enrollment.action.verify_bank_transfer';
+
+    public const ENROLLMENT_ACTION_REFRESH_PAYMENT_TOTALS = 'enrollment.action.refresh_payment_totals';
 
     public const ENROLLMENT_RELATION_PAYMENTS = 'enrollment.relation.payments';
 
@@ -86,6 +90,22 @@ final class PermissionCodes
             self::ENROLLMENT_DETAIL_PLAN_FINANCIAL,
             self::ENROLLMENT_DETAIL_TUITION_BALANCE,
             self::ENROLLMENT_RELATION_PAYMENTS,
+            self::ENROLLMENT_ACTION_VERIFY_BANK_TRANSFER,
+        ];
+    }
+
+    /**
+     * Permissions that show the Payments tab on an enrollment record.
+     *
+     * Verify bank transfer implies tab access — assistants cannot verify without seeing payments.
+     *
+     * @return list<string>
+     */
+    public static function enrollmentPaymentsTabAccessCodes(): array
+    {
+        return [
+            self::ENROLLMENT_RELATION_PAYMENTS,
+            self::ENROLLMENT_ACTION_VERIFY_BANK_TRANSFER,
         ];
     }
 
@@ -104,10 +124,12 @@ final class PermissionCodes
             self::ENROLLMENT_DETAIL_PLAN_FINANCIAL => 'Enrollment — First checkout amounts (base, fee, total)',
             self::ENROLLMENT_DETAIL_TUITION_BALANCE => 'Enrollment — Tuition & balance section',
             self::ENROLLMENT_LIST_FIRST_PAYMENT => 'Enrollment list — First payment column',
+            self::ENROLLMENT_LIST_EXPORT => 'Enrollment list — Export CSV',
             self::ENROLLMENT_ACTION_COPY_PAY_BALANCE_LINK => 'Enrollment — Copy payment link (table & record)',
             self::ENROLLMENT_ACTION_COPY_PAY_INITIAL_LINK => 'Enrollment — Copy initial payment link (legacy)',
             self::ENROLLMENT_ACTION_COPY_BANK_TRANSFER_LINK => 'Enrollment — Copy bank transfer link (legacy)',
             self::ENROLLMENT_ACTION_VERIFY_BANK_TRANSFER => 'Enrollment — Verify bank transfer payments',
+            self::ENROLLMENT_ACTION_REFRESH_PAYMENT_TOTALS => 'Enrollment — Refresh payment totals (enrollment record)',
             self::ENROLLMENT_RELATION_PAYMENTS => 'Enrollment record — Payments tab',
             self::CATALOG_CATEGORIES_VIEW => 'Catalog — Categories (view)',
             self::CATALOG_CATEGORIES_CREATE => 'Catalog — Categories (create)',
@@ -144,6 +166,7 @@ final class PermissionCodes
             self::ENROLLMENT_ACTION_COPY_PAY_BALANCE_LINK,
             self::ENROLLMENT_ACTION_COPY_PAY_INITIAL_LINK,
             self::ENROLLMENT_ACTION_VERIFY_BANK_TRANSFER,
+            self::ENROLLMENT_ACTION_REFRESH_PAYMENT_TOTALS,
             self::CATALOG_CATEGORIES_VIEW,
             self::CATALOG_CATEGORIES_CREATE,
             self::CATALOG_CATEGORIES_UPDATE,
@@ -206,8 +229,10 @@ final class PermissionCodes
     {
         return [
             self::ENROLLMENT_LIST_FIRST_PAYMENT => 'Enrollment list — First payment column',
+            self::ENROLLMENT_LIST_EXPORT => 'Export enrollments (CSV)',
             self::ENROLLMENT_ACTION_COPY_PAY_BALANCE_LINK => 'Copy payment link (table & record)',
-            self::ENROLLMENT_ACTION_VERIFY_BANK_TRANSFER => 'Verify bank transfers (Payments tab actions)',
+            self::ENROLLMENT_ACTION_VERIFY_BANK_TRANSFER => 'Verify bank transfers (Payments tab + actions)',
+            self::ENROLLMENT_ACTION_REFRESH_PAYMENT_TOTALS => 'Refresh payment totals (enrollment record)',
             self::ENROLLMENT_RELATION_PAYMENTS => 'Enrollment record — Payments tab',
         ];
     }

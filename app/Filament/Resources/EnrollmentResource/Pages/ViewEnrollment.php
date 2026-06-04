@@ -13,6 +13,7 @@ use App\Support\PermissionCodes;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Js;
@@ -23,21 +24,11 @@ class ViewEnrollment extends ViewRecord
 
     protected ?string $subheading = null;
 
-    /**
-     * Sync tuition ledger from paid payments so the infolist shows correct cumulative tuition (legacy rows may have had `tuition_amount` = 0).
-     *
-     * @author CKD
-     *
-     * @created 2026-03-26
-     */
-    public function mount(int|string $record): void
+    protected function resolveRecord(int|string $key): Model
     {
-        parent::mount($record);
-
-        /** @var Enrollment $enrollment */
-        $enrollment = $this->getRecord();
-        app(EnrollmentFinancialService::class)->recalculateEnrollmentFinancials($enrollment);
-        $enrollment->refresh();
+        return EnrollmentResource::applyViewPageQuery(
+            Enrollment::query()->whereKey($key),
+        )->firstOrFail();
     }
 
     public function getTitle(): string
@@ -54,11 +45,6 @@ class ViewEnrollment extends ViewRecord
         $label = $fullName !== '' ? $fullName : 'Student';
 
         return "Enrollment Record — {$label}";
-    }
-
-    public function getBreadcrumbs(): array
-    {
-        return [];
     }
 
     protected function getHeaderActions(): array
@@ -100,8 +86,32 @@ class ViewEnrollment extends ViewRecord
                 });
         }
 
-        // Note: The legacy "Copy payment link" (balance page) action remains in `EnrollmentResource` index table.
-        // The record page uses a single consolidated action above to reduce link clutter.
+        if ($this->viewerMayRefreshPaymentTotals()) {
+            $actions[] = Actions\Action::make('refreshPaymentTotals')
+                ->label('Refresh payment totals')
+                ->icon('heroicon-m-arrow-path')
+                ->color('gray')
+                ->requiresConfirmation()
+                ->modalHeading('Refresh payment totals?')
+                ->modalDescription('This adds up all confirmed payments and updates tuition paid, remaining balance, and enrollment status. Use only if those amounts look incorrect.')
+                ->modalSubmitActionLabel('Refresh totals')
+                ->action(function (EnrollmentFinancialService $financialService): void {
+                    /** @var Enrollment $record */
+                    $record = $this->getRecord();
+
+                    $financialService->recalculateEnrollmentFinancials($record);
+
+                    $this->record = EnrollmentResource::applyViewPageQuery(
+                        Enrollment::query()->whereKey($record->getKey()),
+                    )->firstOrFail();
+
+                    Notification::make()
+                        ->title('Payment totals updated')
+                        ->body('Tuition paid, remaining balance, and status were refreshed from confirmed payments.')
+                        ->success()
+                        ->send();
+                });
+        }
 
         $actions[] = Actions\Action::make('back')
             ->label('Back to Enrollments')
@@ -110,6 +120,22 @@ class ViewEnrollment extends ViewRecord
             ->url(fn () => static::getResource()::getUrl('index'));
 
         return $actions;
+    }
+
+    private function viewerMayRefreshPaymentTotals(): bool
+    {
+        /** @var User|null $user */
+        $user = Auth::user();
+
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        return $user->hasPermission(PermissionCodes::ENROLLMENT_ACTION_REFRESH_PAYMENT_TOTALS);
     }
 
     private function resolvePayBalanceSignedUrl(): ?string
@@ -172,7 +198,6 @@ class ViewEnrollment extends ViewRecord
             return true;
         }
 
-        // Unified permission: "Copy payment link (table & record)" covers both initial and balance.
         return $user->hasPermission(PermissionCodes::ENROLLMENT_ACTION_COPY_PAY_BALANCE_LINK);
     }
 
@@ -197,21 +222,14 @@ class ViewEnrollment extends ViewRecord
         /** @var Enrollment $record */
         $record = $this->getRecord();
 
-        // If the student already submitted bank transfer proof for the initial payment,
-        // we should not present an "initial checkout" link anymore.
-        $hasSubmittedInitialBankTransfer = Payment::query()
-            ->where('enrollment_id', $record->getKey())
-            ->where('purpose', Payment::PURPOSE_INITIAL)
-            ->where('payment_method', 'bank_transfer')
-            ->where('status', 'submitted')
-            ->exists();
-
-        if ((int) $record->amount_paid_tuition <= 0 && ! $hasSubmittedInitialBankTransfer) {
+        if ((int) $record->amount_paid_tuition <= 0
+            && ! EnrollmentResource::hasSubmittedInitialBankTransfer($record)) {
             return Payment::PURPOSE_INITIAL;
         }
 
-        // Only allow balance payment links once an initial payment is actually settled.
-        if ((int) $record->amount_paid_tuition > 0 && $record->payment_type === 'downpayment' && $record->computed_balance_tuition_due > 0) {
+        if ((int) $record->amount_paid_tuition > 0
+            && $record->payment_type === 'downpayment'
+            && $record->computed_balance_tuition_due > 0) {
             return Payment::PURPOSE_BALANCE;
         }
 
@@ -226,7 +244,4 @@ class ViewEnrollment extends ViewRecord
             default => false,
         };
     }
-
-    // Bank transfer links are now accessed via the unified resume checkout page,
-    // so we no longer expose a separate "copy bank transfer link" action.
 }
