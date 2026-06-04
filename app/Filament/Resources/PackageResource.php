@@ -4,15 +4,15 @@ namespace App\Filament\Resources;
 
 use App\Filament\Concerns\ChecksCatalogPermissions;
 use App\Filament\Resources\PackageResource\Pages;
-use App\Models\Category;
 use App\Models\Package;
-use App\Models\Program;
+use App\Support\Filament\CatalogOptionsCache;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Support\Enums\Alignment;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class PackageResource extends Resource
 {
@@ -51,45 +51,62 @@ class PackageResource extends Resource
                             ->nullable(),
                         Forms\Components\Select::make('category_id')
                             ->label('Category')
-                            ->options(fn () => Category::query()->orderBy('sort_order')->pluck('name', 'id'))
+                            ->options(fn (): array => CatalogOptionsCache::categoryOptions())
                             ->searchable()
                             ->preload()
-                            ->nullable(),
-                        Forms\Components\TextInput::make('category')
-                            ->helperText('Legacy category string (kept for backward compatibility).')
-                            ->maxLength(255)
                             ->required(),
                         Forms\Components\Toggle::make('is_active')
                             ->default(true),
-                        Forms\Components\TextInput::make('sort_order')
-                            ->numeric()
-                            ->default(0)
-                            ->minValue(0),
                     ])->columns(2),
                 Forms\Components\Section::make('Pricing')
                     ->schema([
                         Forms\Components\TextInput::make('price_full')
+                            ->label('Full Price')
                             ->numeric()
                             ->required()
-                            ->minValue(0),
+                            ->minValue(0)
+                            ->prefix('₱'),
+
+                        Forms\Components\Placeholder::make('pricing_spacer')
+                            ->label('')
+                            ->content(''),
+
                         Forms\Components\TextInput::make('price_early')
-                            ->label('Early Bird Price')
+                            ->label('1st Early Bird Price')
                             ->numeric()
                             ->nullable()
-                            ->minValue(0),
+                            ->minValue(0)
+                            ->prefix('₱'),
+
                         Forms\Components\DatePicker::make('early_deadline')
-                            ->label('Early-bird discount ends')
+                            ->label('1st Early Bird Deadline')
+                            ->helperText('After this date, the 2nd early price (or full price) applies.')
                             ->nullable(),
+
+                        Forms\Components\TextInput::make('price_early_2')
+                            ->label('2nd Early Bird Price')
+                            ->numeric()
+                            ->nullable()
+                            ->minValue(0)
+                            ->prefix('₱'),
+
+                        Forms\Components\DatePicker::make('early_deadline_2')
+                            ->label('2nd Early Bird Deadline')
+                            ->helperText('After this date, the full price applies.')
+                            ->nullable(),
+
                         Forms\Components\Textarea::make('early_bird_label')
+                            ->label('Early Bird Label')
                             ->rows(2)
-                            ->nullable(),
+                            ->nullable()
+                            ->columnSpanFull(),
                     ])->columns(2),
                 Forms\Components\Section::make('Included Programs')
                     ->schema([
                         Forms\Components\Select::make('programs')
                             ->label('Programs')
                             ->relationship('programs', 'name')
-                            ->options(fn () => Program::query()->orderBy('sort_order')->pluck('name', 'id'))
+                            ->options(fn (): array => CatalogOptionsCache::programOptions())
                             ->searchable()
                             ->preload()
                             ->multiple()
@@ -101,21 +118,47 @@ class PackageResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query) => $query->with('categoryModel'))
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
                     ->sortable()
                     ->wrap()
                     ->weight('bold'),
+
                 Tables\Columns\TextColumn::make('slug')
                     ->searchable()
-                    ->toggleable()
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->fontFamily('mono'),
+
+                Tables\Columns\TextColumn::make('category_label')
+                    ->label('Category')
+                    ->getStateUsing(fn (Package $record) => $record->category_label)
+                    ->sortable()
+                    ->placeholder('—'),
+
                 Tables\Columns\TextColumn::make('price_full')
                     ->label('Full')
                     ->money('PHP')
                     ->sortable()
                     ->alignment(Alignment::End),
+
+                Tables\Columns\TextColumn::make('price_early')
+                    ->label('1st Early')
+                    ->money('PHP')
+                    ->sortable()
+                    ->alignment(Alignment::End)
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('price_early_2')
+                    ->label('2nd Early')
+                    ->money('PHP')
+                    ->sortable()
+                    ->alignment(Alignment::End)
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 Tables\Columns\IconColumn::make('is_active')
                     ->boolean()
                     ->sortable(),
@@ -125,6 +168,8 @@ class PackageResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->authorize(fn (): bool => static::currentUserCanCatalogAction('delete')),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

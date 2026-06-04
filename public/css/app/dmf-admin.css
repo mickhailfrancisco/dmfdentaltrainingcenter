@@ -1,7 +1,7 @@
 /* =============================================================
    DMF Dental Admin — Custom Filament overrides
-   Source file: public/css/filament-admin.css
-   Published to: public/css/app/dmf-filament-admin.css
+   Source file: public/css/dmf-admin.css
+   Published to: public/css/app/dmf-admin.css (run: php artisan filament:assets)
    ============================================================= */
 
 /* ---- Table toolbar ---- */
@@ -27,6 +27,86 @@
     width: 100%;
 }
 
+/* Enrollment list: single clean toolbar row (search + filter + icons). */
+.fi-resource-enrollments .fi-ta-header-ctn > .divide-y > :not([hidden]) ~ .fi-ta-header-toolbar,
+.fi-resource-enrollments .fi-ta-header-toolbar {
+    border-top: none;
+}
+
+.fi-resource-enrollments .fi-ta-header-toolbar {
+    align-items: center;
+    padding-top: 0.875rem;
+    padding-bottom: 0.875rem;
+}
+
+.fi-resource-enrollments .fi-ta-header-toolbar > .ms-auto {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+/* Prevent reference # text clipping beside the hash icon. */
+.fi-resource-enrollments .fi-table-cell-reference-number .fi-ta-text-item {
+    line-height: 1.35;
+}
+
+/* Desktop: compact enrollment list table (auto layout — respects Filament column widths). */
+@media (min-width: 1024px) {
+    .fi-resource-enrollments:not(.fi-resource-view-record-page) .fi-ta-content.relative.overflow-x-auto {
+        overflow-x: auto;
+    }
+
+    .fi-resource-enrollments:not(.fi-resource-view-record-page) .fi-ta-table {
+        width: 100%;
+        table-layout: auto;
+    }
+
+    .fi-resource-enrollments:not(.fi-resource-view-record-page) .fi-ta-header-cell,
+    .fi-resource-enrollments:not(.fi-resource-view-record-page) .fi-ta-cell {
+        padding-inline: 0.375rem;
+        vertical-align: middle;
+    }
+
+    .fi-resource-enrollments:not(.fi-resource-view-record-page) .fi-ta-text {
+        font-size: 0.8125rem;
+    }
+
+    .fi-resource-enrollments:not(.fi-resource-view-record-page) .fi-ta-text-item-description {
+        font-size: 0.75rem;
+    }
+
+    .fi-resource-enrollments:not(.fi-resource-view-record-page) .fi-badge {
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 0.6875rem;
+    }
+
+    .fi-resource-enrollments:not(.fi-resource-view-record-page) .fi-ta-actions-cell {
+        width: 4.5rem;
+        padding-inline: 0.25rem;
+        white-space: nowrap;
+    }
+
+    /* Payments tab on enrollment view */
+    .fi-resource-enrollments.fi-resource-view-record-page .fi-resource-relation-manager .fi-ta-table {
+        width: 100%;
+        table-layout: auto;
+    }
+
+    .fi-resource-enrollments.fi-resource-view-record-page .fi-resource-relation-manager .fi-ta-header-cell,
+    .fi-resource-enrollments.fi-resource-view-record-page .fi-resource-relation-manager .fi-ta-cell {
+        padding-inline: 0.5rem;
+        vertical-align: top;
+    }
+
+    .fi-resource-enrollments.fi-resource-view-record-page .fi-resource-relation-manager .fi-ta-actions-cell {
+        width: 4.5rem;
+        white-space: nowrap;
+    }
+}
+
 /* Help icon should look informational (not a CTA). */
 .dmf-filament-help-icon {
     color: rgb(37 99 235) !important; /* blue-600 */
@@ -46,6 +126,33 @@
     flex-shrink: 0;
 }
 
+/*
+ * Enrollment view infolist: auto-pack fields inside section cards when assistant
+ * permissions hide entries — avoids empty grid cells without changing the 2-column page layout.
+ */
+.fi-resource-enrollments.fi-resource-view-record-page .fi-section-content .fi-fo-component-ctn {
+    --cols-default: repeat(auto-fill, minmax(12.5rem, 1fr));
+    --cols-sm: repeat(auto-fill, minmax(12.5rem, 1fr));
+    --cols-md: repeat(auto-fill, minmax(13rem, 1fr));
+    --cols-lg: repeat(auto-fill, minmax(14rem, 1fr));
+    --cols-xl: repeat(auto-fill, minmax(14rem, 1fr));
+    --cols-2xl: repeat(auto-fill, minmax(14rem, 1fr));
+}
+
+.fi-resource-enrollments.fi-resource-view-record-page .fi-section-content .fi-fo-component-ctn > div[style*="1 / -1"] {
+    grid-column: 1 / -1;
+}
+
+/* Two-column enrollment detail: don't stretch the shorter column (avoids huge gap above Payments). */
+.fi-resource-enrollments.fi-resource-view-record-page .dmf-enrollment-detail-grid > dl > .fi-fo-component-ctn {
+    align-items: start;
+}
+
+/* Assistant partial access: one side hidden → remaining column uses full width */
+.fi-resource-enrollments.fi-resource-view-record-page .dmf-enrollment-detail-grid > dl > .fi-fo-component-ctn > :only-child {
+    grid-column: 1 / -1;
+}
+
 /* =============================================================
    ADMIN CHROME — shared header row (sidebar + topbar): one height, one rule
    Selectors verified against Filament v3 Blade templates.
@@ -56,6 +163,19 @@
     --dmf-chrome-divider: 1px solid rgba(38, 50, 85, 0.12);
     --dmf-chrome-bg: #ffffff;
     --dmf-chrome-fg: #263255;
+    --dmf-chrome-x-padding: 1rem;
+}
+
+@media (min-width: 768px) {
+    :root {
+        --dmf-chrome-x-padding: 1.5rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    :root {
+        --dmf-chrome-x-padding: 2rem;
+    }
 }
 
 /* ---- Layout fix: fill full viewport height so body bg never bleeds ---- */
@@ -77,6 +197,7 @@
     flex: 1 !important;
     height: auto !important;
     min-height: 0 !important;
+    padding-inline: var(--dmf-chrome-x-padding) !important;
 }
 
 /* ---- Topbar — same white chrome + divider as sidebar header (single horizontal line) ---- */
@@ -92,6 +213,10 @@
     max-height: var(--dmf-chrome-header-height) !important;
     box-sizing: border-box !important;
     border-bottom: var(--dmf-chrome-divider) !important;
+    max-width: none !important;
+    width: 100% !important;
+    margin-inline: 0 !important;
+    padding-inline: var(--dmf-chrome-x-padding) !important;
 }
 .fi-topbar-open-sidebar-btn,
 .fi-topbar-close-sidebar-btn {
@@ -101,6 +226,207 @@
 .fi-topbar-close-sidebar-btn:hover {
     background-color: rgba(38, 50, 85, 0.08) !important;
     color: var(--dmf-chrome-fg) !important;
+}
+
+/* ---- Topbar greeting (time-of-day + live clock) ---- */
+.dmf-topbar-greeting {
+    position: relative;
+    display: none;
+    align-items: center;
+    gap: 0.625rem;
+    flex-shrink: 0;
+    flex-wrap: nowrap;
+    max-width: none;
+    line-height: 1.25;
+}
+
+@media (min-width: 768px) {
+    .dmf-topbar-greeting {
+        display: flex;
+    }
+}
+
+.dmf-topbar-greeting__sky-scene {
+    position: relative;
+    width: 2.25rem;
+    height: 2.25rem;
+    flex: 0 0 2.25rem;
+    border-radius: 9999px;
+    overflow: hidden;
+    box-shadow:
+        inset 0 0 0 1px rgba(15, 23, 42, 0.08),
+        0 1px 3px rgba(15, 23, 42, 0.12);
+}
+
+.dmf-topbar-greeting__sky-bg {
+    position: absolute;
+    inset: 0;
+    transition: background 0.25s linear;
+}
+
+.dmf-topbar-greeting__sky-glow {
+    position: absolute;
+    left: 50%;
+    bottom: 18%;
+    width: 130%;
+    height: 65%;
+    transform: translateX(-50%);
+    background: radial-gradient(
+        ellipse at center,
+        rgba(251, 191, 36, 0.95) 0%,
+        rgba(249, 115, 22, 0.55) 42%,
+        rgba(249, 115, 22, 0) 72%
+    );
+    transition: opacity 0.25s linear;
+    pointer-events: none;
+}
+
+.dmf-topbar-greeting__celestial {
+    position: absolute;
+    left: 50%;
+    top: 72%;
+    transition: transform 0.25s linear, opacity 0.25s linear;
+    will-change: transform, opacity;
+    pointer-events: none;
+}
+
+.dmf-topbar-greeting__celestial--sun {
+    color: #fde047;
+    filter: drop-shadow(0 0 4px rgba(253, 224, 71, 0.95));
+}
+
+.dmf-topbar-greeting__celestial--moon {
+    color: #eef2ff;
+    filter: drop-shadow(0 0 3px rgba(199, 210, 254, 0.85));
+}
+
+.dmf-topbar-greeting__icon {
+    width: 0.875rem;
+    height: 0.875rem;
+    display: block;
+    flex-shrink: 0;
+}
+
+.dmf-topbar-greeting__text {
+    min-width: 0;
+    text-align: left;
+}
+
+.dmf-topbar-greeting__line {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.25;
+    color: rgb(3 7 18);
+    white-space: nowrap;
+}
+
+.dmf-topbar-greeting__clock {
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.25;
+    color: rgb(100 116 139);
+    white-space: nowrap;
+}
+
+.fi-topbar nav > .ms-auto {
+    display: flex;
+    align-items: center;
+    align-self: stretch;
+    overflow: visible !important;
+}
+
+.dmf-topbar-greeting__sim {
+    position: relative;
+    flex-shrink: 0;
+    margin-inline-start: 0.25rem;
+}
+
+.dmf-topbar-greeting__sim-toggle {
+    border: 1px solid rgb(203 213 225);
+    border-radius: 0.375rem;
+    background: rgb(248 250 252);
+    color: rgb(100 116 139);
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    padding: 0.3125rem 0.4375rem;
+    cursor: pointer;
+}
+
+.dmf-topbar-greeting__sim-toggle.is-active {
+    border-color: rgb(251 191 36);
+    background: rgb(254 243 199);
+    color: rgb(180 83 9);
+}
+
+.dmf-topbar-greeting__sim-panel {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    z-index: 50;
+    width: 15rem;
+    padding: 0.75rem;
+    border: 1px solid rgb(226 232 240);
+    border-radius: 0.5rem;
+    background: rgb(255 255 255);
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+}
+
+.dmf-topbar-greeting__sim-title {
+    margin: 0 0 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgb(15 23 42);
+}
+
+.dmf-topbar-greeting__sim-actions {
+    display: flex;
+    gap: 0.375rem;
+    margin-bottom: 0.5rem;
+}
+
+.dmf-topbar-greeting__sim-btn,
+.dmf-topbar-greeting__sim-preset {
+    border: 1px solid rgb(226 232 240);
+    border-radius: 0.375rem;
+    background: rgb(248 250 252);
+    color: rgb(51 65 85);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1.2;
+    padding: 0.375rem 0.5rem;
+    cursor: pointer;
+}
+
+.dmf-topbar-greeting__sim-btn:hover,
+.dmf-topbar-greeting__sim-preset:hover {
+    background: rgb(241 245 249);
+}
+
+.dmf-topbar-greeting__sim-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    margin-bottom: 0.5rem;
+}
+
+.dmf-topbar-greeting__sim-hint {
+    margin: 0;
+    font-size: 0.625rem;
+    line-height: 1.4;
+    color: rgb(100 116 139);
+}
+
+.dmf-topbar-greeting__sim-hint code {
+    font-size: 0.625rem;
+    color: rgb(71 85 105);
+}
+
+.fi-topbar {
+    overflow-x: visible !important;
 }
 
 /* ---- Sidebar shell — same white as sidebar header / light top strip ---- */
@@ -305,6 +631,27 @@ aside.fi-sidebar {
     color: #1a2340 !important;
 }
 
+.fi-sidebar-nav .fi-sidebar-item button.fi-sidebar-item-button {
+    color: #475569 !important;
+}
+
+.fi-sidebar-nav .fi-sidebar-item button.fi-sidebar-item-button:hover {
+    background-color: rgba(38, 50, 85, 0.08) !important;
+    color: #1a2340 !important;
+}
+
+.fi-sidebar-nav .fi-sidebar-item button.fi-sidebar-item-button .fi-sidebar-item-label {
+    color: #475569 !important;
+}
+
+/* ---- Site footer — full width, aligned with page content padding ---- */
+.dmf-admin-footer__inner {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 2.5rem var(--dmf-chrome-x-padding);
+    box-sizing: border-box;
+}
 
 /* ---- Mobile close overlay ---- */
 .fi-sidebar-close-overlay {

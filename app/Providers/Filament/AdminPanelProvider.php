@@ -12,6 +12,7 @@ use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Assets\Css;
 use Filament\Support\Colors\Color;
+use Filament\Support\Enums\MaxWidth;
 use Filament\Tables\View\TablesRenderHook;
 use Filament\View\PanelsRenderHook;
 use Filament\Widgets;
@@ -41,7 +42,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->sidebarCollapsibleOnDesktop()
             ->collapsibleNavigationGroups(false)
-            ->maxContentWidth('6xl')
+            ->maxContentWidth(MaxWidth::Full)
             ->colors([
                 // Primary = brand gold (accent color of the main site)
                 'primary' => Color::hex('#FAB21B'),
@@ -52,14 +53,16 @@ class AdminPanelProvider extends PanelProvider
             ->darkMode(false)
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
-            ->pages([
-                // Removed generic Dashboard
-            ])
+            ->homeUrl('/admin/enrollment-overview')
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
                 Widgets\AccountWidget::class,
                 // Removed FilamentInfoWidget — not needed for client-facing admin
             ])
+            ->renderHook(
+                PanelsRenderHook::SIDEBAR_NAV_END,
+                fn () => view('filament.sidebar.logout'),
+            )
             ->renderHook(
                 PanelsRenderHook::FOOTER,
                 fn () => view('filament.footer'),

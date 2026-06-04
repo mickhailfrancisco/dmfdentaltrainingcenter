@@ -56,4 +56,53 @@ class EnrollmentPricingServiceTest extends TestCase
 
         $this->assertSame(0, EnrollmentPricingService::balanceTuitionDue($enrollment));
     }
+
+    public function test_balance_uses_second_early_price_when_past_first_deadline(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-08-01', 'Asia/Manila')->startOfDay());
+
+        $enrollment = new Enrollment([
+            'payment_type' => 'downpayment',
+            'tuition_list_amount' => 10_000,
+            'tuition_price_early' => 8_000,
+            'tuition_price_early_2' => 9_000,
+            'amount_paid_tuition' => 5_000,
+        ]);
+        $enrollment->tuition_early_deadline = Carbon::parse('2026-07-15', 'Asia/Manila');
+        $enrollment->tuition_early_deadline_2 = Carbon::parse('2026-08-15', 'Asia/Manila');
+
+        $this->assertSame(4_000, EnrollmentPricingService::balanceTuitionDue($enrollment));
+    }
+
+    public function test_balance_uses_list_price_when_both_deadlines_passed(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-09-01', 'Asia/Manila')->startOfDay());
+
+        $enrollment = new Enrollment([
+            'payment_type' => 'downpayment',
+            'tuition_list_amount' => 10_000,
+            'tuition_price_early' => 8_000,
+            'tuition_price_early_2' => 9_000,
+            'amount_paid_tuition' => 5_000,
+        ]);
+        $enrollment->tuition_early_deadline = Carbon::parse('2026-07-15', 'Asia/Manila');
+        $enrollment->tuition_early_deadline_2 = Carbon::parse('2026-08-15', 'Asia/Manila');
+
+        $this->assertSame(5_000, EnrollmentPricingService::balanceTuitionDue($enrollment));
+    }
+
+    public function test_balance_uses_second_early_price_when_only_second_tier_snapshot_present(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-07-01', 'Asia/Manila')->startOfDay());
+
+        $enrollment = new Enrollment([
+            'payment_type' => 'downpayment',
+            'tuition_list_amount' => 10_000,
+            'tuition_price_early_2' => 9_000,
+            'amount_paid_tuition' => 5_000,
+        ]);
+        $enrollment->tuition_early_deadline_2 = Carbon::parse('2026-08-15', 'Asia/Manila');
+
+        $this->assertSame(4_000, EnrollmentPricingService::balanceTuitionDue($enrollment));
+    }
 }

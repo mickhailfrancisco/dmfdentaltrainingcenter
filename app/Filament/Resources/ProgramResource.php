@@ -4,8 +4,8 @@ namespace App\Filament\Resources;
 
 use App\Filament\Concerns\ChecksCatalogPermissions;
 use App\Filament\Resources\ProgramResource\Pages;
-use App\Models\Category;
 use App\Models\Program;
+use App\Support\Filament\CatalogOptionsCache;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -51,14 +51,9 @@ class ProgramResource extends Resource
 
                     Forms\Components\Select::make('category_id')
                         ->label('Category')
-                        ->options(fn () => Category::query()->orderBy('sort_order')->pluck('name', 'id'))
+                        ->options(fn (): array => CatalogOptionsCache::categoryOptions())
                         ->searchable()
                         ->preload()
-                        ->nullable(),
-
-                    Forms\Components\TextInput::make('category')
-                        ->helperText('Legacy category string (kept for backward compatibility).')
-                        ->maxLength(255)
                         ->required(),
 
                     Forms\Components\TextInput::make('tag')
@@ -67,34 +62,50 @@ class ProgramResource extends Resource
 
                     Forms\Components\Toggle::make('is_active')
                         ->default(true),
-
-                    Forms\Components\TextInput::make('sort_order')
-                        ->numeric()
-                        ->default(0)
-                        ->minValue(0),
                 ])->columns(2),
 
             Forms\Components\Section::make('Pricing')
                 ->schema([
                     Forms\Components\TextInput::make('price_full')
+                        ->label('Full Price')
                         ->numeric()
                         ->required()
-                        ->minValue(0),
+                        ->minValue(0)
+                        ->prefix('₱'),
+
+                    Forms\Components\Placeholder::make('pricing_spacer')
+                        ->label('')
+                        ->content(''),
 
                     Forms\Components\TextInput::make('price_early')
-                        ->label('Early Bird Price')
+                        ->label('1st Early Bird Price')
                         ->numeric()
                         ->nullable()
-                        ->minValue(0),
+                        ->minValue(0)
+                        ->prefix('₱'),
 
                     Forms\Components\DatePicker::make('early_deadline')
-                        ->label('Early-bird discount ends')
-                        ->helperText('After this date, remaining tuition is calculated from list price instead of the early-bird amount. It is a pricing cutoff, not a “pay everything by this day” rule unless your policy says otherwise.')
+                        ->label('1st Early Bird Deadline')
+                        ->helperText('After this date, the 2nd early price (or full price) applies.')
+                        ->nullable(),
+
+                    Forms\Components\TextInput::make('price_early_2')
+                        ->label('2nd Early Bird Price')
+                        ->numeric()
+                        ->nullable()
+                        ->minValue(0)
+                        ->prefix('₱'),
+
+                    Forms\Components\DatePicker::make('early_deadline_2')
+                        ->label('2nd Early Bird Deadline')
+                        ->helperText('After this date, the full price applies.')
                         ->nullable(),
 
                     Forms\Components\Textarea::make('early_bird_label')
+                        ->label('Early Bird Label')
                         ->rows(2)
-                        ->nullable(),
+                        ->nullable()
+                        ->columnSpanFull(),
                 ])->columns(2),
 
         ]);
@@ -103,6 +114,7 @@ class ProgramResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query) => $query->with('categoryModel'))
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
@@ -112,7 +124,7 @@ class ProgramResource extends Resource
 
                 Tables\Columns\TextColumn::make('slug')
                     ->searchable()
-                    ->toggleable()
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->fontFamily('mono'),
 
                 Tables\Columns\TextColumn::make('category_label')
@@ -128,13 +140,31 @@ class ProgramResource extends Resource
                     ->sortable()
                     ->alignment(Alignment::End),
 
+                Tables\Columns\TextColumn::make('price_early')
+                    ->label('1st Early')
+                    ->money('PHP')
+                    ->sortable()
+                    ->alignment(Alignment::End)
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('price_early_2')
+                    ->label('2nd Early')
+                    ->money('PHP')
+                    ->sortable()
+                    ->alignment(Alignment::End)
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 Tables\Columns\IconColumn::make('is_active')
                     ->boolean()
                     ->sortable(),
             ])
-            ->defaultSort('sort_order')
+            ->defaultSort('name')
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->authorize(fn (): bool => static::currentUserCanCatalogAction('delete')),
             ])
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make()

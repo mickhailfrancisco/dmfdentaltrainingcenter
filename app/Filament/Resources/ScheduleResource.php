@@ -4,8 +4,8 @@ namespace App\Filament\Resources;
 
 use App\Filament\Concerns\ChecksCatalogPermissions;
 use App\Filament\Resources\ScheduleResource\Pages;
-use App\Models\Program;
 use App\Models\Schedule;
+use App\Support\Filament\CatalogOptionsCache;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -41,7 +41,7 @@ class ScheduleResource extends Resource
                 ->schema([
                     Forms\Components\Select::make('program_id')
                         ->label('Program')
-                        ->options(fn () => Program::query()->orderBy('sort_order')->pluck('name', 'id'))
+                        ->options(fn (): array => CatalogOptionsCache::programOptions())
                         ->searchable()
                         ->preload()
                         ->required(),
@@ -115,14 +115,14 @@ class ScheduleResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make()
                     ->mutateRecordDataUsing(function (array $data, Schedule $record): array {
-                        if ($record->enrollmentItems()->exists()) {
+                        if (($record->enrollment_items_count ?? $record->enrollmentItems()->count()) > 0) {
                             $data['_has_enrollments'] = true;
                         }
 
                         return $data;
                     }),
                 Tables\Actions\DeleteAction::make()
-                    ->visible(fn (Schedule $record): bool => ! $record->enrollmentItems()->exists()),
+                    ->visible(fn (Schedule $record): bool => ($record->enrollment_items_count ?? 0) === 0),
             ])
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make()

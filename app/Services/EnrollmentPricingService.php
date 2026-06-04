@@ -14,7 +14,8 @@ use App\Models\Enrollment;
  * - Downpayment amount: **50% of list price** (`tuition_list_amount * 0.5`) at enrollment time.
  * - Full payment at enrollment: **active price** (`price_early` while early bird is active, else `price_full`).
  * - Remaining balance after DP: `applicable_tuition_total - amount_paid_tuition`, where
- *   `applicable_tuition_total` is `tuition_price_early` if still within `tuition_early_deadline` (Asia/Manila),
+ *   `applicable_tuition_total` is `tuition_price_early` if still within `tuition_early_deadline`,
+ *   else `tuition_price_early_2` if still within `tuition_early_deadline_2` (Asia/Manila),
  *   otherwise `tuition_list_amount` (`price_full` snapshot). This matches “early bird only if balance is
  *   settled before the early-bird deadline; after deadline use full list price.”
  *
@@ -40,6 +41,13 @@ final class EnrollmentPricingService
 
         if ($early !== null && $deadline !== null && self::isEarlyBirdWindowOpen($deadline)) {
             return (int) $early;
+        }
+
+        $early2 = $enrollment->tuition_price_early_2;
+        $deadline2 = $enrollment->tuition_early_deadline_2;
+
+        if ($early2 !== null && $deadline2 !== null && self::isEarlyBirdWindowOpen($deadline2)) {
+            return (int) $early2;
         }
 
         return (int) ($enrollment->tuition_list_amount ?? 0);

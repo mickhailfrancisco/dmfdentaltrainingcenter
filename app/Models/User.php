@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\UserRole;
+use App\Support\PermissionCodes;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -145,9 +146,23 @@ class User extends Authenticatable implements FilamentUser
             return;
         }
 
-        $ids = Permission::query()->whereIn('code', $codes)->pluck('id');
+        $definitions = PermissionCodes::definitions();
+        $ids = [];
 
-        $this->permissions()->sync($ids->all());
+        foreach ($codes as $code) {
+            if (! is_string($code) || $code === '') {
+                continue;
+            }
+
+            $label = $definitions[$code] ?? $code;
+
+            $ids[] = Permission::query()->firstOrCreate(
+                ['code' => $code],
+                ['label' => $label],
+            )->id;
+        }
+
+        $this->permissions()->sync($ids);
         $this->flushAssistantPermissionCodesCache();
     }
 

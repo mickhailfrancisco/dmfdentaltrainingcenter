@@ -3,8 +3,8 @@
 namespace App\Filament\Resources\AssistantUserResource\Pages;
 
 use App\Filament\Resources\AssistantUserResource;
+use App\Filament\Resources\Pages\CreateRecord;
 use App\Support\PermissionCodes;
-use Filament\Resources\Pages\CreateRecord;
 
 class CreateAssistantUser extends CreateRecord
 {
@@ -16,11 +16,6 @@ class CreateAssistantUser extends CreateRecord
      * @var list<string>
      */
     protected array $pendingPermissionCodes = [];
-
-    /**
-     * Single-action create flow only — hide "Create & create another" and its handler.
-     */
-    protected static bool $canCreateAnother = false;
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {

@@ -7,7 +7,7 @@
     }
 </style>
 <div class="dmf-admin-footer" style="background-color: #263255; color: #e5ebf8; border-top: 1px solid #2b3967; margin-top: auto; width: 100%;">
-    <div style="max-width: 72rem; margin: 0 auto; padding: 2.5rem 1.5rem;">
+    <div class="dmf-admin-footer__inner">
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; border-bottom: 1px solid #2b3967; padding-bottom: 2rem; margin-bottom: 2rem;">
             <div>
                 <span style="font-weight: 700; font-size: 1.125rem; color: #ffffff; margin-bottom: 1rem; display: block;">DMF Dental Training Center</span>

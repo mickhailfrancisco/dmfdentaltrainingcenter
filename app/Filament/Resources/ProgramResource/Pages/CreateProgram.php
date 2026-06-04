@@ -2,8 +2,8 @@
 
 namespace App\Filament\Resources\ProgramResource\Pages;
 
+use App\Filament\Resources\Pages\CreateRecord;
 use App\Filament\Resources\ProgramResource;
-use Filament\Resources\Pages\CreateRecord;
 
 class CreateProgram extends CreateRecord
 {

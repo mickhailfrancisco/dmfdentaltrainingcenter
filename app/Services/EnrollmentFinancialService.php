@@ -26,20 +26,7 @@ final class EnrollmentFinancialService
         DB::transaction(function () use ($enrollment): void {
             $locked = Enrollment::query()->whereKey($enrollment->getKey())->lockForUpdate()->firstOrFail();
 
-            $sum = Payment::query()
-                ->where('enrollment_id', $locked->getKey())
-                ->where('status', 'paid')
-                ->get()
-                ->sum(function (Payment $payment): int {
-                    $fromColumn = (int) $payment->tuition_amount;
-                    if ($fromColumn > 0) {
-                        return $fromColumn;
-                    }
-
-                    $chargedPesos = (int) round(((int) $payment->amount) / 100);
-
-                    return max(0, $chargedPesos - EnrollmentPricingService::CONVENIENCE_FEE_PESOS);
-                });
+            $sum = $this->sumPaidTuitionForEnrollment((int) $locked->getKey());
 
             $locked->amount_paid_tuition = $sum;
             $locked->balance_tuition_due = EnrollmentPricingService::balanceTuitionDue($locked);
@@ -52,6 +39,27 @@ final class EnrollmentFinancialService
                     'status' => (string) $locked->status->value,
                 ]);
         });
+    }
+
+    /**
+     * Sum tuition credited from paid payments using a single aggregate query.
+     */
+    private function sumPaidTuitionForEnrollment(int $enrollmentId): int
+    {
+        $convenienceFee = EnrollmentPricingService::CONVENIENCE_FEE_PESOS;
+
+        $driver = DB::connection()->getDriverName();
+
+        $tuitionExpression = match ($driver) {
+            'pgsql' => 'CASE WHEN tuition_amount > 0 THEN tuition_amount ELSE GREATEST(0, (ROUND(amount / 100.0)::integer - ?)) END',
+            default => 'CASE WHEN tuition_amount > 0 THEN tuition_amount ELSE MAX(0, CAST(ROUND(amount / 100.0) AS INTEGER) - ?) END',
+        };
+
+        return (int) Payment::query()
+            ->where('enrollment_id', $enrollmentId)
+            ->where('status', 'paid')
+            ->selectRaw("COALESCE(SUM({$tuitionExpression}), 0) as tuition_total", [$convenienceFee])
+            ->value('tuition_total');
     }
 
     private function resolveStatusFromLedger(Enrollment $enrollment): EnrollmentStatus
