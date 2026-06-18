@@ -23,9 +23,9 @@ class PaymongoWebhookController extends Controller
         );
 
         Log::info('Paymongo webhook handled', [
-            'result' => $result,
             'result_status' => $result['status'],
-            'result_body' => $result['body'],
+            'result_body_status' => $result['body']['data']['attributes']['status'] ?? null,
+            'result_body_type' => $result['body']['data']['attributes']['type'] ?? null,
         ]);
 
         return response()->json($result['body'], $result['status']);

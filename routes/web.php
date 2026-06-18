@@ -12,9 +12,9 @@ use Illuminate\Support\Facades\Route;
 Route::controller(EnrollmentController::class)->group(function () {
     Route::get('/', 'landing')->name('home');
     Route::get('/enroll', 'form')->name('enroll.form');
-    Route::post('/enroll', 'store')->name('enroll.store');
+    Route::post('/enroll', 'store')->middleware('throttle:10,1')->name('enroll.store');
     Route::get('/enroll/payment', 'payment')->name('enroll.payment');
-    Route::post('/enroll/pay', 'pay')->name('enroll.pay');
+    Route::post('/enroll/pay', 'pay')->middleware('throttle:10,1')->name('enroll.pay');
     Route::get('/enroll/success', 'success')->name('enroll.success');
     Route::get('/enroll/cancel', 'cancel')->name('enroll.cancel');
 });
@@ -24,7 +24,7 @@ Route::get('/enroll/balance/{reference_number}', [EnrollmentBalanceController::c
     ->name('enroll.balance');
 
 Route::post('/enroll/balance/{reference_number}/pay', [EnrollmentBalanceController::class, 'pay'])
-    ->middleware('signed')
+    ->middleware(['signed', 'throttle:10,1'])
     ->name('enroll.balance.pay');
 
 Route::get('/enroll/bank-transfer/{reference_number}/{purpose}', [BankTransferController::class, 'show'])
@@ -32,7 +32,7 @@ Route::get('/enroll/bank-transfer/{reference_number}/{purpose}', [BankTransferCo
     ->name('enroll.bank-transfer.show');
 
 Route::post('/enroll/bank-transfer/{reference_number}/{purpose}', [BankTransferController::class, 'submit'])
-    ->middleware('signed')
+    ->middleware(['signed', 'throttle:10,1'])
     ->name('enroll.bank-transfer.submit');
 
 Route::get('/admin/bank-transfer-submissions/{submission}/proof/{slot?}', [BankTransferProofController::class, 'show'])
@@ -44,7 +44,7 @@ Route::get('/enroll/checkout/{reference_number}', [ResumeCheckoutController::cla
     ->name('enroll.checkout');
 
 Route::post('/enroll/checkout/{reference_number}/pay', [ResumeCheckoutController::class, 'pay'])
-    ->middleware('signed')
+    ->middleware(['signed', 'throttle:10,1'])
     ->name('enroll.checkout.pay');
 
 Route::get('/enroll/pay-link/{reference_number}/{purpose}/{payment_method}', [PaymentLinkController::class, 'redirect'])
@@ -52,6 +52,7 @@ Route::get('/enroll/pay-link/{reference_number}/{purpose}/{payment_method}', [Pa
     ->name('enroll.pay-link');
 
 Route::post('/webhooks/paymongo', [PaymongoWebhookController::class, 'handle'])
+    ->middleware('throttle:60,1')
     ->name('webhooks.paymongo');
 
 // Admin panel root redirect

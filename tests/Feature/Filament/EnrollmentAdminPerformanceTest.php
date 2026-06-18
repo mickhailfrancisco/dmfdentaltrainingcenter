@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Filament;
 
 use App\Enums\EnrollmentStatus;
+use App\Filament\Pages\EnrollmentOverview;
 use App\Filament\Resources\EnrollmentResource\Pages\ListEnrollments;
 use App\Filament\Resources\EnrollmentResource\Pages\ViewEnrollment;
 use App\Models\Enrollment;
@@ -117,5 +118,23 @@ class EnrollmentAdminPerformanceTest extends TestCase
             ->callAction('refreshPaymentTotals')
             ->assertNotified()
             ->assertSuccessful();
+    }
+
+    public function test_operations_overview_uses_bounded_query_count(): void
+    {
+        $admin = $this->makeAdmin();
+        $this->makeEnrollment(uniqid('ov', true));
+
+        $this->actingAs($admin);
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        Livewire::test(EnrollmentOverview::class)
+            ->assertSuccessful();
+
+        $queryCount = count(DB::getQueryLog());
+
+        $this->assertLessThanOrEqual(5, $queryCount, "Expected at most 5 queries, got {$queryCount}");
     }
 }

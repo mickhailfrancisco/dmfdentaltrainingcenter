@@ -74,6 +74,20 @@ final class PermissionCodes
     public const CATALOG_SCHEDULES_DELETE = 'catalog.schedules.delete';
 
     /**
+     * Permissions that allow viewing the enrollment list or operations overview.
+     *
+     * @return list<string>
+     */
+    public static function enrollmentListAccessPermissionCodes(): array
+    {
+        return array_keys(array_filter(
+            self::definitions(),
+            static fn (string $label, string $code): bool => str_starts_with($code, 'enrollment.'),
+            ARRAY_FILTER_USE_BOTH,
+        ));
+    }
+
+    /**
      * Permissions that allow opening a single enrollment record (view page: infolist and/or Payments tab).
      *
      * Assistants without any of these still use the list but get 403 on /enrollments/{id}.

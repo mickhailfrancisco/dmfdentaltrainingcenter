@@ -52,7 +52,7 @@
             lastSimTickAt: 0,
             init() {
                 this.refresh(false);
-                setInterval(() => this.refresh(true), 250);
+                setInterval(() => this.refresh(true), 1000);
             },
             isSimulating() {
                 return this.simMode !== 'live';

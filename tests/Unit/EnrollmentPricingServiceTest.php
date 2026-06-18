@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Unit;
 
 use App\Models\Enrollment;
+use App\Models\Payment;
+use App\Models\Program;
 use App\Services\EnrollmentPricingService;
 use Carbon\Carbon;
 use Tests\TestCase;
@@ -104,5 +106,82 @@ class EnrollmentPricingServiceTest extends TestCase
         $enrollment->tuition_early_deadline_2 = Carbon::parse('2026-08-15', 'Asia/Manila');
 
         $this->assertSame(4_000, EnrollmentPricingService::balanceTuitionDue($enrollment));
+    }
+
+    public function test_balance_stays_zero_when_early_bird_fully_paid_before_deadline(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-06-04', 'Asia/Manila')->startOfDay());
+
+        $program = Program::query()->create([
+            'name' => 'Screenshot Program',
+            'slug' => 'screenshot-program-'.uniqid(),
+            'category' => 'Individual Programs (Theoretical)',
+            'price_full' => 43_000,
+            'price_early' => 41_000,
+            'early_deadline' => '2026-05-30',
+            'is_active' => true,
+            'sort_order' => 0,
+        ]);
+
+        $enrollment = Enrollment::query()->create([
+            'reference_number' => 'DMF-SCREEN-'.strtoupper(substr(uniqid(), -6)),
+            'status' => 'confirmed',
+            'purchasable_type' => Program::class,
+            'purchasable_id' => $program->getKey(),
+            'first_name' => 'Test',
+            'surname' => 'Student',
+            'birthday' => '2000-01-01',
+            'sex' => 'Female',
+            'phone' => '09170000000',
+            'email' => 'screen-'.uniqid().'@test.com',
+            'facebook_messenger_name' => 'Test',
+            'addr_street' => '1 Main',
+            'addr_city' => 'Manila',
+            'addr_province' => 'Metro Manila',
+            'addr_zip' => '1000',
+            'school' => 'U',
+            'year_level' => '2nd Year',
+            'taker_status' => 'First taker',
+            'payment_type' => 'downpayment',
+            'base_amount' => 21_500,
+            'convenience_fee' => 50,
+            'total_amount' => 21_550,
+            'purchasable_name_snapshot' => $program->name,
+            'purchasable_slug_snapshot' => $program->slug,
+            'tuition_list_amount' => 43_000,
+            'tuition_price_early' => 41_000,
+            'tuition_early_deadline' => '2026-05-30',
+            'amount_paid_tuition' => 41_000,
+            'balance_tuition_due' => 0,
+        ]);
+
+        Payment::query()->create([
+            'enrollment_id' => $enrollment->getKey(),
+            'purpose' => Payment::PURPOSE_INITIAL,
+            'payment_method' => 'card',
+            'amount' => (21_500 + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
+            'currency' => 'PHP',
+            'tuition_amount' => 21_500,
+            'status' => 'paid',
+            'paid_at' => Carbon::parse('2026-05-15 10:00:00', 'Asia/Manila'),
+        ]);
+
+        Payment::query()->create([
+            'enrollment_id' => $enrollment->getKey(),
+            'purpose' => Payment::PURPOSE_BALANCE,
+            'payment_method' => 'card',
+            'amount' => (19_500 + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
+            'currency' => 'PHP',
+            'tuition_amount' => 19_500,
+            'status' => 'paid',
+            'paid_at' => Carbon::parse('2026-05-24 10:00:00', 'Asia/Manila'),
+        ]);
+
+        $enrollment->refresh();
+
+        $this->assertSame(0, EnrollmentPricingService::balanceTuitionDue($enrollment));
+        $this->assertSame(41_000, EnrollmentPricingService::applicableTuitionTotal($enrollment));
+
+        Carbon::setTestNow();
     }
 }

@@ -115,20 +115,20 @@ class ScheduleResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make()
                     ->mutateRecordDataUsing(function (array $data, Schedule $record): array {
-                        if (($record->enrollment_items_count ?? $record->enrollmentItems()->count()) > 0) {
+                        if (($record->enrollment_items_count ?? 0) > 0) {
                             $data['_has_enrollments'] = true;
                         }
 
                         return $data;
                     }),
                 Tables\Actions\DeleteAction::make()
-                    ->visible(fn (Schedule $record): bool => ($record->enrollment_items_count ?? 0) === 0),
+                    ->visible(fn (Schedule $record): bool => (int) ($record->enrollment_items_count ?? -1) === 0),
             ])
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make()
                     ->visible(fn (): bool => false),
             ])
-            ->modifyQueryUsing(fn (Builder $query) => $query->with('program'));
+            ->modifyQueryUsing(fn (Builder $query) => $query->with('program')->withCount('enrollmentItems'));
     }
 
     public static function getPages(): array

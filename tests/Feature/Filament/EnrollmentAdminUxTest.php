@@ -13,6 +13,7 @@ use App\Filament\Resources\EnrollmentResource\RelationManagers\PaymentsRelationM
 use App\Models\Enrollment;
 use App\Models\Payment;
 use App\Models\User;
+use App\Support\PermissionCodes;
 use Filament\Facades\Filament;
 use Illuminate\Support\Carbon;
 use Livewire\Livewire;
@@ -216,6 +217,31 @@ class EnrollmentAdminUxTest extends TestCase
             ->assertDontSee('NoTransfer');
     }
 
+    public function test_needs_action_tab_shows_only_actionable_enrollments(): void
+    {
+        $admin = $this->makeAdmin();
+
+        $awaiting = $this->makeEnrollment([
+            'status' => EnrollmentStatus::PENDING->value,
+            'amount_paid_tuition' => 0,
+            'surname' => 'NeedsAwaiting',
+        ]);
+
+        $this->makeEnrollment([
+            'status' => EnrollmentStatus::CONFIRMED->value,
+            'surname' => 'AllGood',
+        ]);
+
+        $this->actingAs($admin);
+
+        Livewire::test(ListEnrollments::class)
+            ->set('activeTab', 'needs_action')
+            ->loadTable()
+            ->assertCanSeeTableRecords([$awaiting])
+            ->assertSee('NeedsAwaiting')
+            ->assertDontSee('AllGood');
+    }
+
     public function test_topbar_shows_time_of_day_greeting_for_authenticated_admin(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-05-22 09:30:00', config('app.display_timezone')));
@@ -241,6 +267,9 @@ class EnrollmentAdminUxTest extends TestCase
 
         $assistant = User::factory()->assistant()->create([
             'name' => 'Jane Assistant',
+        ]);
+        $assistant->syncPermissionsByCode([
+            PermissionCodes::ENROLLMENT_DETAIL_APPLICANT_PROFILE,
         ]);
 
         $this->actingAs($assistant);
@@ -348,5 +377,19 @@ class EnrollmentAdminUxTest extends TestCase
             ->assertTableColumnVisible('bankTransferSubmission.verified_at')
             ->assertTableColumnVisible('paid_at')
             ->assertSee('May 24, 2026', false);
+    }
+
+    public function test_export_action_can_be_invoked_with_sync_queue(): void
+    {
+        config(['queue.default' => 'sync']);
+
+        $admin = $this->makeAdmin();
+        $this->makeEnrollment();
+
+        $this->actingAs($admin);
+
+        Livewire::test(ListEnrollments::class)
+            ->callAction('export')
+            ->assertNotified();
     }
 }

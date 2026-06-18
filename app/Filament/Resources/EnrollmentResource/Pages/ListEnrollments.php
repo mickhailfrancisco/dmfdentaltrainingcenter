@@ -2,10 +2,8 @@
 
 namespace App\Filament\Resources\EnrollmentResource\Pages;
 
-use App\Enums\EnrollmentStatus;
 use App\Filament\Exports\EnrollmentExporter;
 use App\Filament\Resources\EnrollmentResource;
-use App\Models\Payment;
 use Filament\Actions;
 use Filament\Resources\Components\Tab;
 use Filament\Resources\Pages\ListRecords;
@@ -48,66 +46,13 @@ class ListEnrollments extends ListRecords
         return [
             'all' => Tab::make('All'),
             'needs_action' => Tab::make('Needs action')
-                ->modifyQueryUsing(fn (Builder $query): Builder => $this->applyNeedsActionScope($query)),
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->needsAction()),
             'awaiting_payment' => Tab::make('Awaiting payment')
-                ->modifyQueryUsing(fn (Builder $query): Builder => $this->applyAwaitingPaymentScope($query)),
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->awaitingPayment()),
             'pending_verification' => Tab::make('Pending verification')
-                ->modifyQueryUsing(fn (Builder $query): Builder => $this->applyPendingVerificationScope($query)),
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->pendingVerification()),
             'balance_due' => Tab::make('Balance due')
-                ->modifyQueryUsing(fn (Builder $query): Builder => $this->applyBalanceDueScope($query)),
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->balanceDue()),
         ];
-    }
-
-    private function applyAwaitingPaymentScope(Builder $query): Builder
-    {
-        return $query
-            ->where('status', EnrollmentStatus::PENDING->value)
-            ->where('amount_paid_tuition', '<=', 0)
-            ->whereDoesntHave('payments', fn (Builder $paymentQuery): Builder => $this->submittedInitialBankTransferScope($paymentQuery));
-    }
-
-    private function applyPendingVerificationScope(Builder $query): Builder
-    {
-        return $query
-            ->where('status', EnrollmentStatus::PENDING->value)
-            ->whereHas('payments', fn (Builder $paymentQuery): Builder => $this->submittedInitialBankTransferScope($paymentQuery));
-    }
-
-    private function applyBalanceDueScope(Builder $query): Builder
-    {
-        return $query->where(function (Builder $builder): void {
-            $builder
-                ->where('status', EnrollmentStatus::PARTIALLY_PAID->value)
-                ->orWhere(function (Builder $nested): void {
-                    $nested
-                        ->where('payment_type', 'downpayment')
-                        ->where('amount_paid_tuition', '>', 0)
-                        ->where('balance_tuition_due', '>', 0);
-                });
-        });
-    }
-
-    private function applyNeedsActionScope(Builder $query): Builder
-    {
-        return $query->where(function (Builder $outer): void {
-            $outer
-                ->where(function (Builder $awaiting): void {
-                    $this->applyAwaitingPaymentScope($awaiting);
-                })
-                ->orWhere(function (Builder $verification): void {
-                    $this->applyPendingVerificationScope($verification);
-                })
-                ->orWhere(function (Builder $balance): void {
-                    $this->applyBalanceDueScope($balance);
-                });
-        });
-    }
-
-    private function submittedInitialBankTransferScope(Builder $paymentQuery): Builder
-    {
-        return $paymentQuery
-            ->where('purpose', Payment::PURPOSE_INITIAL)
-            ->where('payment_method', 'bank_transfer')
-            ->where('status', 'submitted');
     }
 }

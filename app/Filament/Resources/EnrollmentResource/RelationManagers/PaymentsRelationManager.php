@@ -234,8 +234,12 @@ class PaymentsRelationManager extends RelationManager
                             ->send();
                     })
                     ->after(function ($livewire): void {
-                        if (method_exists($livewire, 'js')) {
-                            $livewire->js('window.location.reload()');
+                        if (method_exists($livewire, 'resetTable')) {
+                            $livewire->resetTable();
+                        }
+
+                        if (method_exists($livewire, 'getOwnerRecord')) {
+                            $livewire->getOwnerRecord()->refresh();
                         }
                     }),
             ])

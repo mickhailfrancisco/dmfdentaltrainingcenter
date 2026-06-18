@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\BankTransferSubmission;
 use App\Models\Payment;
 use App\Models\Program;
 use App\Services\EnrollmentFinancialService;
@@ -271,6 +272,181 @@ class EnrollmentFinancialLedgerTest extends TestCase
 
         $this->assertSame(8_000, $enrollment->amount_paid_tuition);
         $this->assertSame(0, $enrollment->balance_tuition_due);
+        $this->assertSame('confirmed', $enrollment->status->value);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_create_enrollment_snapshots_second_tier_early_pricing(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-08-01', 'Asia/Manila')->startOfDay());
+
+        $program = $this->createProgram([
+            'slug' => 'tier-two-program',
+            'price_full' => 10_000,
+            'price_early' => 8_000,
+            'early_deadline' => '2026-07-15',
+            'price_early_2' => 9_000,
+            'early_deadline_2' => '2026-08-31',
+            'early_bird_label' => 'Early',
+        ]);
+
+        $enrollment = app(EnrollmentService::class)->createEnrollment(
+            $this->baseEnrollmentPayload($program, ['program' => 'tier-two-program'])
+        );
+
+        $enrollment->refresh();
+
+        $this->assertSame(9_000, $enrollment->tuition_price_early_2);
+        $this->assertSame('2026-08-31', $enrollment->tuition_early_deadline_2?->toDateString());
+        $this->assertSame('Early bird (2nd)', $enrollment->tuition_discount_label);
+        $this->assertSame(9_000, $enrollment->balance_tuition_due);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_recalculate_updates_balance_after_first_early_deadline_using_second_tier(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-08-01', 'Asia/Manila')->startOfDay());
+
+        $program = $this->createProgram([
+            'slug' => 'tier-two-recalc',
+            'price_full' => 10_000,
+            'price_early' => 8_000,
+            'early_deadline' => '2026-07-15',
+            'price_early_2' => 9_000,
+            'early_deadline_2' => '2026-08-31',
+        ]);
+
+        $enrollment = app(EnrollmentService::class)->createEnrollment(
+            $this->baseEnrollmentPayload($program, ['program' => 'tier-two-recalc'])
+        );
+
+        Payment::query()->create([
+            'enrollment_id' => $enrollment->id,
+            'purpose' => Payment::PURPOSE_INITIAL,
+            'payment_method' => 'card',
+            'amount' => (5_000 + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
+            'currency' => 'PHP',
+            'tuition_amount' => 5_000,
+            'status' => 'paid',
+            'paid_at' => now(),
+        ]);
+
+        app(EnrollmentFinancialService::class)->recalculateEnrollmentFinancials($enrollment->fresh());
+        $enrollment->refresh();
+
+        $this->assertSame(4_000, $enrollment->balance_tuition_due);
+        $this->assertSame(4_000, $enrollment->computed_balance_tuition_due);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_full_early_bird_paid_before_deadline_stays_zero_after_deadline_recalc(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-06-04', 'Asia/Manila')->startOfDay());
+
+        $program = $this->createProgram([
+            'slug' => 'early-lock-full',
+            'price_full' => 43_000,
+            'price_early' => 41_000,
+            'early_deadline' => '2026-05-30',
+        ]);
+
+        $enrollment = app(EnrollmentService::class)->createEnrollment(
+            $this->baseEnrollmentPayload($program, ['program' => 'early-lock-full'])
+        );
+
+        Payment::query()->create([
+            'enrollment_id' => $enrollment->id,
+            'purpose' => Payment::PURPOSE_INITIAL,
+            'payment_method' => 'card',
+            'amount' => (21_500 + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
+            'currency' => 'PHP',
+            'tuition_amount' => 21_500,
+            'status' => 'paid',
+            'paid_at' => Carbon::parse('2026-05-15 10:00:00', 'Asia/Manila'),
+        ]);
+
+        Payment::query()->create([
+            'enrollment_id' => $enrollment->id,
+            'purpose' => Payment::PURPOSE_BALANCE,
+            'payment_method' => 'card',
+            'amount' => (19_500 + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
+            'currency' => 'PHP',
+            'tuition_amount' => 19_500,
+            'status' => 'paid',
+            'paid_at' => Carbon::parse('2026-05-24 10:00:00', 'Asia/Manila'),
+        ]);
+
+        app(EnrollmentFinancialService::class)->recalculateEnrollmentFinancials($enrollment->fresh());
+        $enrollment->refresh();
+
+        $this->assertSame(41_000, $enrollment->amount_paid_tuition);
+        $this->assertSame(0, $enrollment->balance_tuition_due);
+        $this->assertSame(0, $enrollment->computed_balance_tuition_due);
+        $this->assertSame('confirmed', $enrollment->status->value);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_bank_transfer_submitted_before_deadline_locks_early_bird_even_if_verified_late(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-06-04', 'Asia/Manila')->startOfDay());
+
+        $program = $this->createProgram([
+            'slug' => 'early-lock-bt',
+            'price_full' => 10_000,
+            'price_early' => 8_000,
+            'early_deadline' => '2026-05-30',
+        ]);
+
+        $enrollment = app(EnrollmentService::class)->createEnrollment(
+            $this->baseEnrollmentPayload($program, ['program' => 'early-lock-bt'])
+        );
+
+        $initialPayment = Payment::query()->create([
+            'enrollment_id' => $enrollment->id,
+            'purpose' => Payment::PURPOSE_INITIAL,
+            'payment_method' => 'bank_transfer',
+            'amount' => (5_000 + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
+            'currency' => 'PHP',
+            'tuition_amount' => 5_000,
+            'status' => 'paid',
+            'paid_at' => Carbon::parse('2026-05-10 10:00:00', 'Asia/Manila'),
+        ]);
+
+        BankTransferSubmission::query()->create([
+            'payment_id' => $initialPayment->getKey(),
+            'reference_number' => 'BT-INITIAL',
+            'proof_path' => 'bank-transfers/test/initial.pdf',
+            'submitted_at' => Carbon::parse('2026-05-10 09:00:00', 'Asia/Manila'),
+        ]);
+
+        $balancePayment = Payment::query()->create([
+            'enrollment_id' => $enrollment->id,
+            'purpose' => Payment::PURPOSE_BALANCE,
+            'payment_method' => 'bank_transfer',
+            'amount' => (3_000 + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
+            'currency' => 'PHP',
+            'tuition_amount' => 3_000,
+            'status' => 'paid',
+            'paid_at' => Carbon::parse('2026-06-02 10:00:00', 'Asia/Manila'),
+        ]);
+
+        BankTransferSubmission::query()->create([
+            'payment_id' => $balancePayment->getKey(),
+            'reference_number' => 'BT-BALANCE',
+            'proof_path' => 'bank-transfers/test/balance.pdf',
+            'submitted_at' => Carbon::parse('2026-05-28 09:00:00', 'Asia/Manila'),
+        ]);
+
+        app(EnrollmentFinancialService::class)->recalculateEnrollmentFinancials($enrollment->fresh());
+        $enrollment->refresh();
+
+        $this->assertSame(8_000, $enrollment->amount_paid_tuition);
+        $this->assertSame(0, $enrollment->balance_tuition_due);
+        $this->assertSame(0, $enrollment->computed_balance_tuition_due);
         $this->assertSame('confirmed', $enrollment->status->value);
 
         Carbon::setTestNow();

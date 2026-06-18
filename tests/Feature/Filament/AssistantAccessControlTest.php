@@ -130,8 +130,6 @@ class AssistantAccessControlTest extends TestCase
 
     public function test_assistant_with_non_admin_email_cannot_pretend_to_be_admin(): void
     {
-        // An assistant whose email is NOT the owner address must not pass the
-        // hard email-guard and must not be treated as an admin.
         $assistant = $this->makeAssistant();
 
         $this->assertFalse($assistant->isAdmin());
@@ -292,17 +290,33 @@ class AssistantAccessControlTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_assistant_without_record_permissions_still_sees_enrollment_list(): void
+    public function test_assistant_without_record_permissions_cannot_see_enrollment_list(): void
     {
         $assistant = $this->makeAssistantWithoutPermissions();
         $enrollment = $this->makeEnrollment();
 
         $this->actingAs($assistant);
 
+        $this->assertFalse(EnrollmentResource::canViewAny());
+
         Livewire::test(ListEnrollments::class)
-            ->assertSuccessful()
-            ->loadTable()
-            ->assertCanSeeTableRecords([$enrollment]);
+            ->assertForbidden();
+    }
+
+    public function test_assistant_with_catalog_only_permissions_cannot_see_enrollment_list(): void
+    {
+        $assistant = User::factory()->assistant()->create();
+        $assistant->syncPermissionsByCode([
+            PermissionCodes::CATALOG_PACKAGES_VIEW,
+        ]);
+        $this->makeEnrollment();
+
+        $this->actingAs($assistant);
+
+        $this->assertFalse(EnrollmentResource::canViewAny());
+
+        Livewire::test(ListEnrollments::class)
+            ->assertForbidden();
     }
 
     public function test_assistant_with_one_detail_permission_can_open_enrollment_view(): void

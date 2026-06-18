@@ -47,9 +47,7 @@ class User extends Authenticatable implements FilamentUser
     /**
      * Determines if the user may access the Filament admin panel.
      *
-     * Only users with an explicit admin or assistant role may enter. The admin
-     * email is hard-guarded as a fallback so a mis-seeded role never locks out
-     * the primary owner.
+     * Only users with an explicit admin or assistant role may enter.
      *
      * @author CKD
      *
@@ -57,10 +55,6 @@ class User extends Authenticatable implements FilamentUser
      */
     public function canAccessPanel(Panel $panel): bool
     {
-        if ($this->email === 'admin@dmfdental.com') {
-            return true;
-        }
-
         // Use tryFrom against the raw DB string so an unrecognised role value
         // never throws a ValueError — it simply returns null (access denied).
         $role = UserRole::tryFrom($this->getRawOriginal('role') ?? '');
@@ -77,7 +71,7 @@ class User extends Authenticatable implements FilamentUser
      */
     public function isAdmin(): bool
     {
-        return $this->email === 'admin@dmfdental.com' || $this->role === UserRole::Admin;
+        return $this->role === UserRole::Admin;
     }
 
     /**

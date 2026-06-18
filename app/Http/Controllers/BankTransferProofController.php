@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Filament\Resources\EnrollmentResource;
 use App\Models\BankTransferSubmission;
 use App\Models\BankTransferSubmissionFile;
 use App\Support\PermissionCodes;
@@ -31,6 +32,11 @@ class BankTransferProofController extends Controller
             abort_unless($mayView, 403);
         }
 
+        $submission->loadMissing('payment.enrollment');
+        $enrollment = $submission->payment?->enrollment;
+        abort_unless($enrollment !== null, 404);
+        abort_unless(EnrollmentResource::canView($enrollment), 403);
+
         $slot = $slot ?: BankTransferSubmissionFile::SLOT_PHOTO_1;
         abort_unless(in_array($slot, [BankTransferSubmissionFile::SLOT_PHOTO_1, BankTransferSubmissionFile::SLOT_PHOTO_2], true), 404);
 
@@ -38,6 +44,7 @@ class BankTransferProofController extends Controller
         $path = (string) ($file?->path ?: $submission->proof_path);
 
         abort_unless(filled($path), 404);
+        abort_unless(str_starts_with($path, 'bank-transfers/'), 404);
 
         return Storage::disk('local')->response(
             $path,

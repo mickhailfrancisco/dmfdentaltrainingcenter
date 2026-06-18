@@ -50,16 +50,25 @@ final class EnrollmentFinancialService
 
         $driver = DB::connection()->getDriverName();
 
-        $tuitionExpression = match ($driver) {
-            'pgsql' => 'CASE WHEN tuition_amount > 0 THEN tuition_amount ELSE GREATEST(0, (ROUND(amount / 100.0)::integer - ?)) END',
-            default => 'CASE WHEN tuition_amount > 0 THEN tuition_amount ELSE MAX(0, CAST(ROUND(amount / 100.0) AS INTEGER) - ?) END',
-        };
+        $tuitionExpression = self::tuitionSumExpressionForDriver($driver);
 
         return (int) Payment::query()
             ->where('enrollment_id', $enrollmentId)
             ->where('status', 'paid')
             ->selectRaw("COALESCE(SUM({$tuitionExpression}), 0) as tuition_total", [$convenienceFee])
             ->value('tuition_total');
+    }
+
+    /**
+     * SQL expression for summing tuition credited from a paid payment row.
+     */
+    public static function tuitionSumExpressionForDriver(string $driver): string
+    {
+        return match ($driver) {
+            'pgsql' => 'CASE WHEN tuition_amount > 0 THEN tuition_amount ELSE GREATEST(0, (ROUND(amount / 100.0)::integer - ?)) END',
+            'mysql' => 'CASE WHEN tuition_amount > 0 THEN tuition_amount ELSE GREATEST(0, CAST(ROUND(amount / 100.0) AS SIGNED) - ?) END',
+            default => 'CASE WHEN tuition_amount > 0 THEN tuition_amount ELSE MAX(0, CAST(ROUND(amount / 100.0) AS INTEGER) - ?) END',
+        };
     }
 
     private function resolveStatusFromLedger(Enrollment $enrollment): EnrollmentStatus

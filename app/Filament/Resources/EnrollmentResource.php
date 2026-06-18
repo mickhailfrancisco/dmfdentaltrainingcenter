@@ -75,7 +75,24 @@ class EnrollmentResource extends Resource
 
     public static function canViewAny(): bool
     {
-        return Auth::check();
+        /** @var User|null $user */
+        $user = Auth::user();
+
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        foreach (PermissionCodes::enrollmentListAccessPermissionCodes() as $code) {
+            if ($user->hasPermission($code)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public static function canView(Model $record): bool

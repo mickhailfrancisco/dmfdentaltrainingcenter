@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\EnrollmentStatus;
 use App\Services\EnrollmentPricingService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -101,6 +102,65 @@ class Enrollment extends Model
     public function getComputedBalanceTuitionDueAttribute(): int
     {
         return EnrollmentPricingService::balanceTuitionDue($this);
+    }
+
+    /**
+     * Enrollments awaiting initial payment (no submitted bank transfer).
+     */
+    public function scopeAwaitingPayment(Builder $query): Builder
+    {
+        return $query
+            ->where('status', EnrollmentStatus::PENDING->value)
+            ->where('amount_paid_tuition', '<=', 0)
+            ->whereDoesntHave('payments', fn (Builder $paymentQuery): Builder => static::applySubmittedInitialBankTransferScope($paymentQuery));
+    }
+
+    /**
+     * Enrollments with a submitted initial bank transfer pending verification.
+     */
+    public function scopePendingVerification(Builder $query): Builder
+    {
+        return $query
+            ->where('status', EnrollmentStatus::PENDING->value)
+            ->whereHas('payments', fn (Builder $paymentQuery): Builder => static::applySubmittedInitialBankTransferScope($paymentQuery));
+    }
+
+    /**
+     * Enrollments with an outstanding tuition balance.
+     */
+    public function scopeBalanceDue(Builder $query): Builder
+    {
+        return $query->where(function (Builder $builder): void {
+            $builder
+                ->where('status', EnrollmentStatus::PARTIALLY_PAID->value)
+                ->orWhere(function (Builder $nested): void {
+                    $nested
+                        ->where('payment_type', 'downpayment')
+                        ->where('amount_paid_tuition', '>', 0)
+                        ->where('balance_tuition_due', '>', 0);
+                });
+        });
+    }
+
+    /**
+     * Union of awaiting payment, pending verification, and balance due buckets.
+     */
+    public function scopeNeedsAction(Builder $query): Builder
+    {
+        return $query->where(function (Builder $outer): void {
+            $outer
+                ->where(fn (Builder $awaiting): Builder => $awaiting->awaitingPayment())
+                ->orWhere(fn (Builder $verification): Builder => $verification->pendingVerification())
+                ->orWhere(fn (Builder $balance): Builder => $balance->balanceDue());
+        });
+    }
+
+    public static function applySubmittedInitialBankTransferScope(Builder $paymentQuery): Builder
+    {
+        return $paymentQuery
+            ->where('purpose', Payment::PURPOSE_INITIAL)
+            ->where('payment_method', 'bank_transfer')
+            ->where('status', 'submitted');
     }
 
     public static function generateReference(): string
