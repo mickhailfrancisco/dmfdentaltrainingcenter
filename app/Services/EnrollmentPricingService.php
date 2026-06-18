@@ -127,6 +127,13 @@ final class EnrollmentPricingService
      */
     private static function paidPaymentsForSettlement(Enrollment $enrollment): Collection
     {
+        if ($enrollment->relationLoaded('payments')) {
+            return $enrollment->payments
+                ->where('status', 'paid')
+                ->sortBy([['paid_at', 'asc'], ['id', 'asc']])
+                ->values();
+        }
+
         return Payment::query()
             ->where('enrollment_id', $enrollment->getKey())
             ->where('status', 'paid')
