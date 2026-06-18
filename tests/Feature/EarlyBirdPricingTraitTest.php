@@ -110,6 +110,18 @@ class EarlyBirdPricingTraitTest extends TestCase
         $this->assertFalse($package->isFirstEarlyBirdActive());
         $this->assertTrue($package->isSecondEarlyBirdActive());
         $this->assertSame(9000, $package->active_price);
+
+        $program = Program::factory()->create([
+            'price_full' => 10000,
+            'price_early' => 8000,
+            'early_deadline' => $pastDeadline,
+            'price_early_2' => 9000,
+            'early_deadline_2' => $futureDeadline,
+        ]);
+
+        $this->assertFalse($program->isFirstEarlyBirdActive());
+        $this->assertTrue($program->isSecondEarlyBirdActive());
+        $this->assertSame(9000, $program->active_price);
     }
 
     public function test_downpayment_amount_is_fifty_percent_of_list_price(): void
