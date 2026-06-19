@@ -43,21 +43,28 @@ return new class extends Migration
                 }
             });
 
-        // Drop legacy unique constraint so one enrollment can have multiple payment rows.
-        // Must drop the FK first — MySQL won't drop a unique index used by a FK constraint.
-        $hasUnique = collect(DB::select("SHOW INDEX FROM payments WHERE Key_name = 'payments_enrollment_id_unique'"))->isNotEmpty();
+        // Drop legacy single-enrollment unique constraint so one enrollment can have multiple payment rows.
+        // Must drop the FK first — MySQL won't drop an index used by a FK constraint.
+        $hasLegacyUnique = collect(DB::select("SHOW INDEX FROM payments WHERE Key_name = 'payments_enrollment_id_unique'"))->isNotEmpty();
 
-        if ($hasUnique) {
+        if ($hasLegacyUnique) {
             Schema::table('payments', function (Blueprint $table) {
                 $table->dropForeign(['enrollment_id']);
+            });
+            Schema::table('payments', function (Blueprint $table) {
                 $table->dropUnique(['enrollment_id']);
+            });
+            Schema::table('payments', function (Blueprint $table) {
                 $table->foreign('enrollment_id')->references('id')->on('enrollments')->onDelete('cascade');
             });
         }
 
-        if (collect(DB::select("SHOW INDEX FROM payments WHERE Key_name = 'payments_enrollment_id_purpose_index'"))->isEmpty()) {
+        // Create composite unique constraint (enrollment + purpose) if not already present.
+        $hasCompositeUnique = collect(DB::select("SHOW INDEX FROM payments WHERE Key_name = 'payments_enrollment_purpose_unique'"))->isNotEmpty();
+
+        if (! $hasCompositeUnique) {
             Schema::table('payments', function (Blueprint $table) {
-                $table->index(['enrollment_id', 'purpose']);
+                $table->unique(['enrollment_id', 'purpose'], 'payments_enrollment_purpose_unique');
             });
         }
 
