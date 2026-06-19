@@ -11,23 +11,21 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('payments', function (Blueprint $table) {
-            // Replace the non-unique index with a composite unique constraint.
+            // FK must be dropped before dropping the index it depends on.
+            $table->dropForeign(['enrollment_id']);
             $table->dropIndex(['enrollment_id', 'purpose']);
-        });
-
-        Schema::table('payments', function (Blueprint $table) {
             $table->unique(['enrollment_id', 'purpose'], 'payments_enrollment_purpose_unique');
+            $table->foreign('enrollment_id')->references('id')->on('enrollments')->onDelete('cascade');
         });
     }
 
     public function down(): void
     {
         Schema::table('payments', function (Blueprint $table) {
+            $table->dropForeign(['enrollment_id']);
             $table->dropUnique('payments_enrollment_purpose_unique');
-        });
-
-        Schema::table('payments', function (Blueprint $table) {
             $table->index(['enrollment_id', 'purpose']);
+            $table->foreign('enrollment_id')->references('id')->on('enrollments')->onDelete('cascade');
         });
     }
 };
