@@ -67,6 +67,13 @@
         vertical-align: middle;
     }
 
+    /* Filament's text-column blade adds px-3 to the inner fi-ta-text div.
+       Use !important to guarantee it's zeroed out regardless of inline styles
+       (Alpine tooltip init can inject inline styles on the wrapper). */
+    .fi-resource-enrollments:not(.fi-resource-view-record-page) .fi-ta-col-wrp .fi-ta-text {
+        padding-inline: 0 !important;
+    }
+
     .fi-resource-enrollments:not(.fi-resource-view-record-page) .fi-ta-text {
         font-size: 0.8125rem;
     }

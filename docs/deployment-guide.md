@@ -125,6 +125,11 @@ PAYMONGO_SK=sk_live_...
 PAYMONGO_PK=pk_live_...
 PAYMONGO_WEBHOOK_SECRET=whsec_...
 
+# Signed enrollment agreement (PDF or DOCX on server — see section 8)
+ENROLLMENT_AGREEMENT_EMAIL=enrollment@dmfdental.com
+ENROLLMENT_AGREEMENT_FILENAME=DMF-Undertaking-December-2025-Lecture.docx
+# ENROLLMENT_AGREEMENT_PATH=   # optional; default storage/app/enrollment-agreements/DMF-Undertaking-December-2025-Lecture.docx
+
 RUN_OPTIMIZE_ON_BOOT=true
 ```
 
@@ -368,6 +373,9 @@ php artisan filament:optimize
 - [ ] Create test program → visible on enroll form
 - [ ] Test Paymongo checkout (small amount or test mode on staging)
 - [ ] Bank transfer proof upload + verify flow
+- [ ] Enrollment success page: **Download Agreement** works (`/enroll/agreement/{ref}`)
+- [ ] Signed agreement file uploaded to `storage/app/enrollment-agreements/DMF-Undertaking-December-2025-Lecture.docx` (or `ENROLLMENT_AGREEMENT_PATH`)
+- [ ] `ENROLLMENT_AGREEMENT_EMAIL` set to the address where students email signed copies
 - [ ] Assistant login with limited permissions
 
 ### DNS (GoDaddy domain example)

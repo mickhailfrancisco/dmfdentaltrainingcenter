@@ -8,6 +8,7 @@ use App\Models\Program;
 use App\Support\Filament\CatalogOptionsCache;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Resources\Resource;
 use Filament\Support\Enums\Alignment;
 use Filament\Tables;
@@ -71,41 +72,58 @@ class ProgramResource extends Resource
                         ->numeric()
                         ->required()
                         ->minValue(0)
-                        ->prefix('₱'),
+                        ->prefix('₱')
+                        ->columnSpan(1),
 
-                    Forms\Components\Placeholder::make('pricing_spacer')
-                        ->label('')
-                        ->content(''),
+                    Forms\Components\Fieldset::make('1st Early Bird')
+                        ->schema([
+                            Forms\Components\TextInput::make('price_early')
+                                ->label('Price')
+                                ->numeric()
+                                ->nullable()
+                                ->minValue(0)
+                                ->prefix('₱')
+                                ->live(onBlur: true)
+                                ->required(fn (Get $get): bool => filled($get('early_deadline'))),
 
-                    Forms\Components\TextInput::make('price_early')
-                        ->label('1st Early Bird Price')
-                        ->numeric()
-                        ->nullable()
-                        ->minValue(0)
-                        ->prefix('₱'),
-
-                    Forms\Components\DatePicker::make('early_deadline')
-                        ->label('1st Early Bird Deadline')
-                        ->helperText('After this date, the 2nd early price (or full price) applies.')
-                        ->nullable(),
-
-                    Forms\Components\TextInput::make('price_early_2')
-                        ->label('2nd Early Bird Price')
-                        ->numeric()
-                        ->nullable()
-                        ->minValue(0)
-                        ->prefix('₱'),
-
-                    Forms\Components\DatePicker::make('early_deadline_2')
-                        ->label('2nd Early Bird Deadline')
-                        ->helperText('After this date, the full price applies.')
-                        ->nullable(),
-
-                    Forms\Components\Textarea::make('early_bird_label')
-                        ->label('Early Bird Label')
-                        ->rows(2)
-                        ->nullable()
+                            Forms\Components\DatePicker::make('early_deadline')
+                                ->label('Deadline')
+                                ->helperText('After this date, the 2nd early price (or full price) applies.')
+                                ->nullable()
+                                ->default(null)
+                                ->required(fn (Get $get): bool => filled($get('price_early'))),
+                        ])
+                        ->columns(2)
                         ->columnSpanFull(),
+
+                    Forms\Components\Fieldset::make('2nd Early Bird')
+                        ->schema([
+                            Forms\Components\TextInput::make('price_early_2')
+                                ->label('Price')
+                                ->numeric()
+                                ->nullable()
+                                ->minValue(0)
+                                ->prefix('₱')
+                                ->live(onBlur: true)
+                                ->required(fn (Get $get): bool => filled($get('early_deadline_2'))),
+
+                            Forms\Components\DatePicker::make('early_deadline_2')
+                                ->label('Deadline')
+                                ->helperText('After this date, the full price applies.')
+                                ->nullable()
+                                ->default(null)
+                                ->required(fn (Get $get): bool => filled($get('price_early_2'))),
+                        ])
+                        ->columns(2)
+                        ->columnSpanFull()
+                        ->hidden(fn (Get $get): bool => blank($get('price_early'))),
+
+                    Forms\Components\TextInput::make('early_bird_label')
+                        ->label('Early Bird Label')
+                        ->nullable()
+                        ->placeholder('e.g. "Early Bird – Save ₱2,000!"')
+                        ->columnSpanFull()
+                        ->hidden(fn (Get $get): bool => blank($get('price_early'))),
                 ])->columns(2),
 
         ]);

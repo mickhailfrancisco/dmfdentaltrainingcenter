@@ -18,7 +18,6 @@ use Filament\Infolists;
 use Filament\Infolists\Infolist;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
-use Filament\Support\Enums\Alignment;
 use Filament\Support\Enums\MaxWidth;
 use Filament\Tables;
 use Filament\Tables\Columns\TextColumn\TextColumnSize;
@@ -521,9 +520,8 @@ class EnrollmentResource extends Resource
                     ->copyable()
                     ->fontFamily('mono')
                     ->size(TextColumnSize::Small)
-                    ->width('6.25rem')
-                    ->grow(false)
-                    ->alignment(Alignment::Start),
+                    ->extraHeaderAttributes(['style' => 'padding-inline: 1.5rem'])
+                    ->extraCellAttributes(['style' => 'padding-inline: 1.5rem']),
 
                 Tables\Columns\TextColumn::make('student_name')
                     ->label('Student')
@@ -534,9 +532,7 @@ class EnrollmentResource extends Resource
                             ->orWhere('surname', 'like', "%{$search}%")
                             ->orWhere('email', 'like', "%{$search}%");
                     })
-                    ->lineClamp(1)
-                    ->grow(true)
-                    ->alignment(Alignment::Start),
+                    ->lineClamp(1),
 
                 Tables\Columns\TextColumn::make('purchasable_name_snapshot')
                     ->label('Program Enrolled')
@@ -551,8 +547,6 @@ class EnrollmentResource extends Resource
                     )))
                     ->searchable()
                     ->lineClamp(1)
-                    ->grow(true)
-                    ->alignment(Alignment::Start)
                     ->toggleable(isToggledHiddenByDefault: false),
 
                 Tables\Columns\TextColumn::make('total_amount')
@@ -561,9 +555,6 @@ class EnrollmentResource extends Resource
                     ->money('PHP')
                     ->sortable()
                     ->size(TextColumnSize::Small)
-                    ->width('5.5rem')
-                    ->grow(false)
-                    ->alignment(Alignment::Start)
                     ->visible(fn (): bool => static::viewerCan(PermissionCodes::ENROLLMENT_LIST_FIRST_PAYMENT))
                     ->toggleable(isToggledHiddenByDefault: false),
 
@@ -574,17 +565,11 @@ class EnrollmentResource extends Resource
                         return $query->orderBy('balance_tuition_due', $direction);
                     })
                     ->size(TextColumnSize::Small)
-                    ->width('5.5rem')
-                    ->grow(false)
-                    ->alignment(Alignment::Start)
                     ->visible(fn (): bool => static::viewerCan(PermissionCodes::ENROLLMENT_DETAIL_TUITION_BALANCE))
                     ->toggleable(isToggledHiddenByDefault: false),
 
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
-                    ->alignment(Alignment::Start)
-                    ->width('6.75rem')
-                    ->grow(false)
                     ->color(fn ($state): string|array => EnrollmentStatus::tryFromMixed($state)?->filamentColor() ?? 'gray')
                     ->formatStateUsing(fn ($state, Enrollment $record): string => static::formatTableStatusLabel($record))
                     ->tooltip(fn (Enrollment $record): string => static::formatStatusLabel($record))
@@ -597,10 +582,7 @@ class EnrollmentResource extends Resource
                         ->timezone(config('app.display_timezone'))
                         ->format('M j, Y g:i A'))
                     ->size(TextColumnSize::Small)
-                    ->width('5.25rem')
-                    ->grow(false)
-                    ->sortable()
-                    ->alignment(Alignment::Start),
+                    ->sortable(),
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([

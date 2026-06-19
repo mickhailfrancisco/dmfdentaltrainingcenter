@@ -12,7 +12,7 @@ class Schedule extends Model
     use HasFactory;
 
     protected $fillable = [
-        'program_id', 'label', 'mode',
+        'program_id', 'school_year_id', 'label', 'mode',
         'start_date', 'end_date', 'slots', 'is_active',
     ];
 
@@ -25,6 +25,11 @@ class Schedule extends Model
     public function program(): BelongsTo
     {
         return $this->belongsTo(Program::class);
+    }
+
+    public function schoolYear(): BelongsTo
+    {
+        return $this->belongsTo(SchoolYear::class);
     }
 
     public function enrollmentItems(): HasMany
