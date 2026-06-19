@@ -23,6 +23,8 @@ class EnrollmentOverview extends Page
 
     protected static ?int $navigationSort = 0;
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $title = 'Operations overview';
 
     protected static string $view = 'filament.pages.enrollment-overview';
