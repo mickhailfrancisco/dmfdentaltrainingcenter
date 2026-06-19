@@ -43,10 +43,15 @@ return new class extends Migration
                 }
             });
 
-        // Drop legacy unique constraint so one enrollment can have multiple payment rows
-        if (collect(DB::select("SHOW INDEX FROM payments WHERE Key_name = 'payments_enrollment_id_unique'"))->isNotEmpty()) {
+        // Drop legacy unique constraint so one enrollment can have multiple payment rows.
+        // Must drop the FK first — MySQL won't drop a unique index used by a FK constraint.
+        $hasUnique = collect(DB::select("SHOW INDEX FROM payments WHERE Key_name = 'payments_enrollment_id_unique'"))->isNotEmpty();
+
+        if ($hasUnique) {
             Schema::table('payments', function (Blueprint $table) {
+                $table->dropForeign(['enrollment_id']);
                 $table->dropUnique(['enrollment_id']);
+                $table->foreign('enrollment_id')->references('id')->on('enrollments')->onDelete('cascade');
             });
         }
 
