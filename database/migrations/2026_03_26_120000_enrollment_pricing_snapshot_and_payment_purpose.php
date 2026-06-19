@@ -19,8 +19,12 @@ return new class extends Migration
     {
         // ── 1. Add columns to payments ──────────────────────────────────────
         Schema::table('payments', function (Blueprint $table) {
-            $table->string('purpose', 20)->default('initial')->after('enrollment_id');
-            $table->unsignedInteger('tuition_amount')->default(0)->after('currency');
+            if (! Schema::hasColumn('payments', 'purpose')) {
+                $table->string('purpose', 20)->default('initial')->after('enrollment_id');
+            }
+            if (! Schema::hasColumn('payments', 'tuition_amount')) {
+                $table->unsignedInteger('tuition_amount')->default(0)->after('currency');
+            }
         });
 
         // Backfill: purpose = 'initial', tuition_amount = enrollments.base_amount
@@ -40,24 +44,44 @@ return new class extends Migration
             });
 
         // Drop legacy unique constraint so one enrollment can have multiple payment rows
-        Schema::table('payments', function (Blueprint $table) {
-            $table->dropUnique(['enrollment_id']);
-        });
+        if (collect(DB::select("SHOW INDEX FROM payments WHERE Key_name = 'payments_enrollment_id_unique'"))->isNotEmpty()) {
+            Schema::table('payments', function (Blueprint $table) {
+                $table->dropUnique(['enrollment_id']);
+            });
+        }
 
-        Schema::table('payments', function (Blueprint $table) {
-            $table->index(['enrollment_id', 'purpose']);
-        });
+        if (collect(DB::select("SHOW INDEX FROM payments WHERE Key_name = 'payments_enrollment_id_purpose_index'"))->isEmpty()) {
+            Schema::table('payments', function (Blueprint $table) {
+                $table->index(['enrollment_id', 'purpose']);
+            });
+        }
 
         // ── 2. Add snapshot + ledger columns to enrollments ─────────────────
         Schema::table('enrollments', function (Blueprint $table) {
-            $table->unsignedInteger('tuition_list_amount')->nullable()->after('total_amount');
-            $table->unsignedInteger('tuition_price_early')->nullable()->after('tuition_list_amount');
-            $table->date('tuition_early_deadline')->nullable()->after('tuition_price_early');
-            $table->unsignedInteger('tuition_price_dp')->nullable()->after('tuition_early_deadline');
-            $table->unsignedInteger('tuition_discount_amount')->default(0)->after('tuition_price_dp');
-            $table->string('tuition_discount_label')->nullable()->after('tuition_discount_amount');
-            $table->unsignedInteger('amount_paid_tuition')->default(0)->after('tuition_discount_label');
-            $table->unsignedInteger('balance_tuition_due')->default(0)->after('amount_paid_tuition');
+            if (! Schema::hasColumn('enrollments', 'tuition_list_amount')) {
+                $table->unsignedInteger('tuition_list_amount')->nullable()->after('total_amount');
+            }
+            if (! Schema::hasColumn('enrollments', 'tuition_price_early')) {
+                $table->unsignedInteger('tuition_price_early')->nullable()->after('tuition_list_amount');
+            }
+            if (! Schema::hasColumn('enrollments', 'tuition_early_deadline')) {
+                $table->date('tuition_early_deadline')->nullable()->after('tuition_price_early');
+            }
+            if (! Schema::hasColumn('enrollments', 'tuition_price_dp')) {
+                $table->unsignedInteger('tuition_price_dp')->nullable()->after('tuition_early_deadline');
+            }
+            if (! Schema::hasColumn('enrollments', 'tuition_discount_amount')) {
+                $table->unsignedInteger('tuition_discount_amount')->default(0)->after('tuition_price_dp');
+            }
+            if (! Schema::hasColumn('enrollments', 'tuition_discount_label')) {
+                $table->string('tuition_discount_label')->nullable()->after('tuition_discount_amount');
+            }
+            if (! Schema::hasColumn('enrollments', 'amount_paid_tuition')) {
+                $table->unsignedInteger('amount_paid_tuition')->default(0)->after('tuition_discount_label');
+            }
+            if (! Schema::hasColumn('enrollments', 'balance_tuition_due')) {
+                $table->unsignedInteger('balance_tuition_due')->default(0)->after('amount_paid_tuition');
+            }
         });
 
         // Backfill: copy pricing snapshot from programs
