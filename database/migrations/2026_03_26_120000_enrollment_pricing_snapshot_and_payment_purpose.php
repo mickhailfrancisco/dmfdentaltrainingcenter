@@ -18,6 +18,7 @@ return new class extends Migration
     public function up(): void
     {
         // ── 1. Add columns to payments ──────────────────────────────────────
+        // Guard against partial previous run (MySQL DDL is non-transactional).
         Schema::table('payments', function (Blueprint $table) {
             if (! Schema::hasColumn('payments', 'purpose')) {
                 $table->string('purpose', 20)->default('initial')->after('enrollment_id');
@@ -43,26 +44,39 @@ return new class extends Migration
                 }
             });
 
-        // Drop legacy single-enrollment unique constraint so one enrollment can have multiple payment rows.
-        // Must drop the FK first — MySQL won't drop an index used by a FK constraint.
-        $hasLegacyUnique = collect(DB::select("SHOW INDEX FROM payments WHERE Key_name = 'payments_enrollment_id_unique'"))->isNotEmpty();
+        // Drop legacy unique constraint so one enrollment can have multiple payment rows.
+        // MySQL requires dropping the FK that references the unique index before the index
+        // can be dropped, then the FK is re-added.
+        if (DB::getDriverName() === 'mysql') {
+            $hasLegacyUnique = collect(DB::select("SHOW INDEX FROM payments WHERE Key_name = 'payments_enrollment_id_unique'"))->isNotEmpty();
 
-        if ($hasLegacyUnique) {
-            Schema::table('payments', function (Blueprint $table) {
-                $table->dropForeign(['enrollment_id']);
-            });
+            if ($hasLegacyUnique) {
+                Schema::table('payments', function (Blueprint $table) {
+                    $table->dropForeign(['enrollment_id']);
+                });
+                Schema::table('payments', function (Blueprint $table) {
+                    $table->dropUnique(['enrollment_id']);
+                });
+                Schema::table('payments', function (Blueprint $table) {
+                    $table->foreign('enrollment_id')->references('id')->on('enrollments')->onDelete('cascade');
+                });
+            }
+        } else {
             Schema::table('payments', function (Blueprint $table) {
                 $table->dropUnique(['enrollment_id']);
-            });
-            Schema::table('payments', function (Blueprint $table) {
-                $table->foreign('enrollment_id')->references('id')->on('enrollments')->onDelete('cascade');
             });
         }
 
         // Create composite unique constraint (enrollment + purpose) if not already present.
-        $hasCompositeUnique = collect(DB::select("SHOW INDEX FROM payments WHERE Key_name = 'payments_enrollment_purpose_unique'"))->isNotEmpty();
+        if (DB::getDriverName() === 'mysql') {
+            $hasCompositeUnique = collect(DB::select("SHOW INDEX FROM payments WHERE Key_name = 'payments_enrollment_purpose_unique'"))->isNotEmpty();
 
-        if (! $hasCompositeUnique) {
+            if (! $hasCompositeUnique) {
+                Schema::table('payments', function (Blueprint $table) {
+                    $table->unique(['enrollment_id', 'purpose'], 'payments_enrollment_purpose_unique');
+                });
+            }
+        } else {
             Schema::table('payments', function (Blueprint $table) {
                 $table->unique(['enrollment_id', 'purpose'], 'payments_enrollment_purpose_unique');
             });
@@ -200,7 +214,7 @@ return new class extends Migration
         });
 
         Schema::table('payments', function (Blueprint $table) {
-            $table->dropIndex(['enrollment_id', 'purpose']);
+            $table->dropUnique('payments_enrollment_purpose_unique');
         });
 
         Schema::table('payments', function (Blueprint $table) {

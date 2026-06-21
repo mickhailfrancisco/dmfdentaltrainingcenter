@@ -8,9 +8,12 @@ use App\Filament\Resources\EnrollmentResource;
 use App\Models\Enrollment;
 use App\Models\Payment;
 use App\Models\User;
+use App\Services\EnrollmentDeletionService;
 use App\Services\EnrollmentFinancialService;
+use App\Services\EnrollmentNotesService;
 use App\Support\PermissionCodes;
 use Filament\Actions;
+use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -113,6 +116,64 @@ class ViewEnrollment extends ViewRecord
                 });
         }
 
+        if ($this->viewerMayEditNotes()) {
+            $actions[] = Actions\Action::make('editNotes')
+                ->label('Edit notes')
+                ->icon('heroicon-m-pencil-square')
+                ->color('gray')
+                ->modalHeading('Edit staff notes')
+                ->modalDescription('Internal notes for this enrollment. Not visible to students.')
+                ->modalSubmitActionLabel('Save notes')
+                ->fillForm(fn (): array => [
+                    'notes' => $this->getRecord()->notes,
+                ])
+                ->form([
+                    Forms\Components\Textarea::make('notes')
+                        ->label('Notes')
+                        ->rows(6)
+                        ->maxLength(5000)
+                        ->nullable(),
+                ])
+                ->action(function (array $data, EnrollmentNotesService $notesService): void {
+                    /** @var Enrollment $record */
+                    $record = $this->getRecord();
+
+                    $notesService->updateNotes($record, $data['notes'] ?? null);
+
+                    $this->record = EnrollmentResource::applyViewPageQuery(
+                        Enrollment::query()->whereKey($record->getKey()),
+                    )->firstOrFail();
+
+                    Notification::make()
+                        ->title('Notes saved')
+                        ->success()
+                        ->send();
+                });
+        }
+
+        if (($record = $this->record) instanceof Enrollment && EnrollmentResource::canDelete($record)) {
+            $actions[] = Actions\Action::make('deleteEnrollment')
+                ->label('Delete enrollment')
+                ->icon('heroicon-m-trash')
+                ->color('danger')
+                ->requiresConfirmation()
+                ->modalHeading('Delete enrollment?')
+                ->modalDescription(fn (): string => sprintf(
+                    'Permanently remove %s (%s). Only use for duplicate or abandoned enrollments with no payment.',
+                    EnrollmentResource::getRecordTitle($record),
+                    $record->reference_number,
+                ))
+                ->modalSubmitActionLabel('Delete enrollment')
+                ->action(function () use ($record): void {
+                    /** @var User $user */
+                    $user = Auth::user();
+
+                    app(EnrollmentDeletionService::class)->delete($record, $user);
+
+                    $this->redirect(EnrollmentResource::getUrl('index'));
+                });
+        }
+
         $actions[] = Actions\Action::make('back')
             ->label('Back to Enrollments')
             ->icon('heroicon-m-arrow-left')
@@ -136,6 +197,22 @@ class ViewEnrollment extends ViewRecord
         }
 
         return $user->hasPermission(PermissionCodes::ENROLLMENT_ACTION_REFRESH_PAYMENT_TOTALS);
+    }
+
+    private function viewerMayEditNotes(): bool
+    {
+        /** @var User|null $user */
+        $user = Auth::user();
+
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        return $user->hasPermission(PermissionCodes::ENROLLMENT_ACTION_EDIT_NOTES);
     }
 
     private function resolvePayBalanceSignedUrl(): ?string

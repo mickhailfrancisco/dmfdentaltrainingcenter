@@ -182,7 +182,9 @@ class BankTransferService
             throw new RuntimeException('No bank transfer proof has been submitted yet.');
         }
 
-        DB::transaction(function () use ($payment, $submission, $verifier, $notes): void {
+        $enrollment = $payment->enrollment()->firstOrFail();
+
+        DB::transaction(function () use ($payment, $submission, $verifier, $notes, $enrollment): void {
             $submission->update([
                 'verified_at' => now(),
                 'verified_by' => $verifier->getKey(),
@@ -193,9 +195,9 @@ class BankTransferService
                 'status' => 'paid',
                 'paid_at' => now(),
             ]);
-        });
 
-        $this->financialService->recalculateEnrollmentFinancials($payment->enrollment()->firstOrFail());
+            $this->financialService->recalculateEnrollmentFinancials($enrollment);
+        });
     }
 
     private function signedStudentUrl(string $referenceNumber, string $purpose): string

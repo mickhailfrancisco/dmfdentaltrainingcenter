@@ -48,7 +48,7 @@
                 <div class="space-y-10">
                     <div class="space-y-4">
                         <div>
-                            <h2 class="text-sm font-bold uppercase tracking-wide text-gray-400 mb-3">Where you paid</h2>
+                            <h2 class="text-sm font-bold uppercase tracking-wide text-gray-400 mb-3">Where you paid <span class="text-red-600 normal-case">*</span></h2>
                             <div class="grid grid-cols-2 gap-2">
                     <label class="group block min-w-0 cursor-pointer" for="manual-method-bank">
                         <input type="radio" id="manual-method-bank" name="manual_method_pick" value="bank" class="peer sr-only" checked>
@@ -85,6 +85,7 @@
                         </div>
 
                 <div id="manual-bank" class="space-y-3">
+                    <p class="text-sm font-semibold text-gray-700">Select bank <span class="text-red-600">*</span></p>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         @forelse($banks as $bank)
                             @php
@@ -187,14 +188,38 @@
 
                     <div class="space-y-3.5 border-t border-gray-100 pt-10">
                         <div>
-                            <h2 class="text-sm font-bold uppercase tracking-wide text-gray-400 mb-3">Your proof</h2>
-                            <p class="text-xs text-gray-500 mb-4">
-                                Reference number and clear photos (JPG/PNG, max 5MB each).
-                            </p>
+                            <h2 class="text-sm font-bold uppercase tracking-wide text-gray-400 mb-3">Your proof <span class="text-red-600 normal-case">*</span></h2>
+                        </div>
+
+                        <div class="rounded-2xl border-2 border-amber-300 bg-amber-50 p-5 sm:p-6 shadow-sm" role="note" aria-label="Proof of payment reminder">
+                            <div class="flex items-start gap-3.5">
+                                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700 ring-1 ring-amber-200">
+                                    <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                                    </svg>
+                                </span>
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-base sm:text-lg font-extrabold text-amber-950 leading-snug">
+                                        Please upload a clear proof of payment
+                                    </p>
+                                    <p class="mt-2 text-sm sm:text-base font-medium text-amber-900 leading-relaxed">
+                                        Blurry, dark, or cropped photos may delay verification. Make sure your screenshot or photo is sharp and easy to read before you submit.
+                                    </p>
+                                    <ul class="mt-3 space-y-1.5 text-sm text-amber-900 leading-relaxed list-disc pl-5 marker:text-amber-600">
+                                        <li>Bank or remittance channel name</li>
+                                        <li>Account or receiver name and number</li>
+                                        <li>Amount paid and date/time of transfer</li>
+                                        <li>Reference or transaction number (if shown)</li>
+                                    </ul>
+                                    <p class="mt-3 text-xs sm:text-sm font-semibold text-amber-800">
+                                        Accepted formats: JPG or PNG, max 5MB per photo.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Transfer reference number</label>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Transfer reference number <span class="text-red-600">*</span></label>
                         <input type="text"
                                name="transfer_reference"
                                value="{{ old('transfer_reference') }}"
@@ -206,11 +231,10 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Upload photo 1</label>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Upload photo 1 <span class="text-red-600">*</span></label>
                         <input type="file"
                                name="photo_1"
                                class="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100">
-                        <p class="mt-1 text-[11px] text-gray-400">JPG or PNG, max 5MB.</p>
                         @error('photo_1')
                             <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                         @enderror
@@ -221,15 +245,10 @@
                         <input type="file"
                                name="photo_2"
                                class="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100">
-                        <p class="mt-1 text-[11px] text-gray-400">JPG or PNG, max 5MB.</p>
                         @error('photo_2')
                             <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
-
-                    <p class="text-[11px] text-gray-600 leading-relaxed bg-slate-50 border border-slate-100 rounded-lg px-3 py-2">
-                        Proof should clearly show bank, account, name, date/time, and reference when applicable.
-                    </p>
 
                     <button type="submit"
                             class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 bg-brand-600 text-white font-semibold rounded-xl shadow-sm hover:bg-brand-700 transition-all duration-200">

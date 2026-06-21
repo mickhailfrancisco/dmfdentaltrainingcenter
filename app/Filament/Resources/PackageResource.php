@@ -43,6 +43,9 @@ class PackageResource extends Resource
                             ->required()
                             ->maxLength(255),
                         Forms\Components\TextInput::make('slug')
+                            ->label('Package code')
+                            ->helperText('Short unique ID for enrollment links (e.g. package-a). Use lowercase letters, numbers, and hyphens. Students see the package name, not this code.')
+                            ->placeholder('e.g. package-a')
                             ->required()
                             ->maxLength(255)
                             ->unique(ignoreRecord: true),
@@ -127,6 +130,7 @@ class PackageResource extends Resource
                     ->weight('bold'),
 
                 Tables\Columns\TextColumn::make('slug')
+                    ->label('Package code')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->fontFamily('mono'),
