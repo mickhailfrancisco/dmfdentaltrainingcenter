@@ -65,10 +65,12 @@ final class EnrollmentBalanceService
             ->where('reference_number', $referenceNumber)
             ->firstOrFail();
 
-        $this->paymongoService->syncPendingCheckoutSessionsForEnrollment($enrollment);
-        $enrollment->refresh();
+        if ($this->paymongoService->hasPendingCheckoutSessions($enrollment)) {
+            $this->paymongoService->syncPendingCheckoutSessionsForEnrollment($enrollment);
+        } else {
+            $this->financialService->recalculateEnrollmentFinancials($enrollment);
+        }
 
-        $this->financialService->recalculateEnrollmentFinancials($enrollment);
         $enrollment->refresh();
 
         if ($enrollment->payment_type !== 'downpayment') {
@@ -123,8 +125,10 @@ final class EnrollmentBalanceService
 
         $enrollment = Enrollment::where('reference_number', $referenceNumber)->firstOrFail();
 
-        $this->paymongoService->syncPendingCheckoutSessionsForEnrollment($enrollment);
-        $enrollment->refresh();
+        if ($this->paymongoService->hasPendingCheckoutSessions($enrollment)) {
+            $this->paymongoService->syncPendingCheckoutSessionsForEnrollment($enrollment);
+            $enrollment->refresh();
+        }
 
         $checkout = $this->paymongoService->createCheckoutSession(
             $enrollment,

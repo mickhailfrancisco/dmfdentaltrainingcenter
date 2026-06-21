@@ -122,7 +122,7 @@
                     ['label' => 'Date Enrolled', 'value' => $enrollment->created_at->timezone('Asia/Manila')->format('F j, Y'), 'icon' => 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'],
                 ];
                 if ($enrollment->payment_type === 'downpayment') {
-                    $bal = $enrollment->computed_balance_tuition_due;
+                    $bal = $balanceTuitionDue ?? $enrollment->computed_balance_tuition_due;
                     $hasPendingBalanceBankTransfer = $enrollment->payments->contains(fn ($p) => $p->payment_method === 'bank_transfer'
                         && $p->purpose === \App\Models\Payment::PURPOSE_BALANCE
                         && $p->status === 'submitted');
@@ -136,7 +136,7 @@
                     }
 
                     $expectedRemainingAfterVerification = $pendingInitialTuition > 0
-                        ? max(0, \App\Services\EnrollmentPricingService::applicableTuitionTotal($enrollment) - $pendingInitialTuition)
+                        ? max(0, ($applicableTuitionTotal ?? \App\Services\EnrollmentPricingService::applicableTuitionTotal($enrollment)) - $pendingInitialTuition)
                         : null;
 
                     if ($pendingInitialBankTransferPayment && $pendingInitialTuition > 0) {
@@ -199,34 +199,45 @@
                 <h3 class="text-sm font-bold text-gray-700 mb-3">What happens next?</h3>
                 <div class="space-y-2.5">
                     @php
+                    $agreementSubmissionEmail = config('enrollment.agreement.submission_email');
+                    $agreementMailtoSubject = rawurlencode('Signed Enrollment Agreement — ' . $enrollment->reference_number);
+                    $agreementMailtoBody = rawurlencode(
+                        "Hello,\n\nPlease find my signed enrollment agreement attached.\n\nReference No.: {$enrollment->reference_number}\nName: {$enrollment->full_name}\n\nThank you."
+                    );
+                    $agreementMailtoUrl = "mailto:{$agreementSubmissionEmail}?subject={$agreementMailtoSubject}&body={$agreementMailtoBody}";
                     $nextSteps = [
-                        ['step' => '1', 'text' => 'Our team will verify your enrollment within 24 hours.'],
-                        ['step' => '2', 'text' => 'If we need anything else, we will reach you using the phone or email you provided.'],
-                        ['step' => '3', 'text' => 'Join your first session on your scheduled date. Good luck!'],
+                        ['step' => '1', 'text' => 'Download the enrollment agreement using the button below.'],
+                        ['step' => '2', 'html' => 'Sign the agreement and email it to <a href="' . e($agreementMailtoUrl) . '" class="text-brand-600 hover:underline font-medium">' . e($agreementSubmissionEmail) . '</a>. Include reference no. <span class="font-mono font-semibold text-gray-800">' . e($enrollment->reference_number) . '</span> in the subject line.'],
+                        ['step' => '3', 'text' => 'Our team will verify your enrollment within 24 hours.'],
+                        ['step' => '4', 'text' => 'Join your first session on your scheduled date. Good luck!'],
                     ];
                     @endphp
                     @foreach($nextSteps as $ns)
                     <div class="flex items-start gap-3">
                         <span class="w-6 h-6 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">{{ $ns['step'] }}</span>
+                        @if(! empty($ns['html'] ?? null))
+                        <p class="text-sm text-gray-600 leading-relaxed">{!! $ns['html'] !!}</p>
+                        @else
                         <p class="text-sm text-gray-600 leading-relaxed">{{ $ns['text'] }}</p>
+                        @endif
                     </div>
                     @endforeach
                 </div>
             </div>
 
-            {{-- Action buttons: flex row + flex-1 so all CTAs share the same height --}}
+            {{-- Action buttons --}}
             <div class="flex flex-col sm:flex-row gap-3 pt-2 sm:items-stretch">
+                <a href="{{ route('enroll.agreement.download', ['reference_number' => $enrollment->reference_number]) }}"
+                   id="download-agreement-btn"
+                   class="success-cta flex flex-1 flex-col items-center justify-center gap-2 px-4 py-4 min-h-[5.25rem] bg-white text-brand-700 font-semibold rounded-xl border border-brand-100 hover:border-brand-300 hover:bg-brand-50 transition-all duration-200 text-center">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <span class="text-sm leading-snug text-center text-balance px-1">Download Agreement</span>
+                </a>
                 <a href="{{ url('/') }}"
                    id="back-home-btn"
                    class="success-cta flex flex-1 flex-col items-center justify-center gap-2 px-4 py-4 min-h-[5.25rem] bg-brand-600 text-white font-semibold rounded-xl shadow-sm hover:bg-brand-700 transition-all duration-200 text-center">
                     <svg class="w-5 h-5 flex-shrink-0 opacity-95" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
                     <span class="text-sm leading-snug">Back to Home</span>
-                </a>
-                <a href="{{ url('/enroll') }}"
-                   id="enroll-another-btn"
-                   class="success-cta flex flex-1 flex-col items-center justify-center gap-2 px-4 py-4 min-h-[5.25rem] bg-white text-brand-700 font-semibold rounded-xl border border-brand-100 hover:border-brand-300 hover:bg-brand-50 transition-all duration-200 text-center">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-                    <span class="text-sm leading-snug text-center text-balance px-1">Enroll another person</span>
                 </a>
             </div>
 

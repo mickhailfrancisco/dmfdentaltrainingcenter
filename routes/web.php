@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\BankTransferController;
 use App\Http\Controllers\BankTransferProofController;
+use App\Http\Controllers\EnrollmentAgreementController;
 use App\Http\Controllers\EnrollmentBalanceController;
 use App\Http\Controllers\EnrollmentController;
 use App\Http\Controllers\PaymentLinkController;
@@ -18,6 +19,10 @@ Route::controller(EnrollmentController::class)->group(function () {
     Route::get('/enroll/success', 'success')->name('enroll.success');
     Route::get('/enroll/cancel', 'cancel')->name('enroll.cancel');
 });
+
+Route::get('/enroll/agreement/{reference_number}', [EnrollmentAgreementController::class, 'download'])
+    ->middleware('throttle:30,1')
+    ->name('enroll.agreement.download');
 
 Route::get('/enroll/balance/{reference_number}', [EnrollmentBalanceController::class, 'show'])
     ->middleware('signed')

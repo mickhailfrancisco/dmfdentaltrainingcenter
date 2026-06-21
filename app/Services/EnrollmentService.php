@@ -155,22 +155,31 @@ class EnrollmentService
         return null;
     }
 
+    public function createEnrollmentItemsPublic(Enrollment $enrollment, Program|Package $purchased, ?int $scheduleId): void
+    {
+        $this->createEnrollmentItems($enrollment, $purchased, $scheduleId);
+    }
+
     private function createEnrollmentItems(Enrollment $enrollment, Program|Package $purchased, ?int $scheduleId): void
     {
         if ($purchased instanceof Package) {
             $includedPrograms = $purchased->programs()->where('is_active', true)->get();
 
-            foreach ($includedPrograms as $included) {
-                EnrollmentItem::query()->create([
-                    'enrollment_id' => $enrollment->getKey(),
-                    'program_id' => $included->getKey(),
-                    'schedule_id' => null,
-                    'status' => (string) $enrollment->status->value,
-                    'program_name_snapshot' => (string) $included->name,
-                    'program_slug_snapshot' => (string) $included->slug,
-                    'schedule_label_snapshot' => null,
-                    'schedule_mode_snapshot' => null,
-                ]);
+            $rows = $includedPrograms->map(fn (Program $included) => [
+                'enrollment_id' => $enrollment->getKey(),
+                'program_id' => $included->getKey(),
+                'schedule_id' => null,
+                'status' => (string) $enrollment->status->value,
+                'program_name_snapshot' => (string) $included->name,
+                'program_slug_snapshot' => (string) $included->slug,
+                'schedule_label_snapshot' => null,
+                'schedule_mode_snapshot' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ])->all();
+
+            if (! empty($rows)) {
+                EnrollmentItem::insert($rows);
             }
 
             return;

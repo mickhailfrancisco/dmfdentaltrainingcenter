@@ -144,7 +144,7 @@ class PaymongoService
         }
     }
 
-    public function syncCheckoutSessionStatus(string $checkoutSessionId): ?Enrollment
+    public function syncCheckoutSessionStatus(string $checkoutSessionId, bool $recalculateFinancials = true): ?Enrollment
     {
         $payment = Payment::with(['enrollment', 'enrollment.payments'])
             ->where('paymongo_checkout_session_id', $checkoutSessionId)
@@ -155,10 +155,7 @@ class PaymongoService
         }
 
         try {
-            $response = Http::withBasicAuth(config('services.paymongo.secret_key'), '')
-                ->acceptJson()
-                ->timeout(20)
-                ->retry(2, 300)
+            $response = $this->paymongoStatusClient()
                 ->get("https://api.paymongo.com/v1/checkout_sessions/{$checkoutSessionId}");
 
             if (! $response->successful()) {
@@ -189,7 +186,7 @@ class PaymongoService
                 'paymongo_payload' => $response->json(),
             ]);
 
-            if ($localStatus === 'paid') {
+            if ($localStatus === 'paid' && $recalculateFinancials) {
                 $this->enrollmentFinancialService->recalculateEnrollmentFinancials($payment->enrollment->fresh());
             }
 
@@ -202,6 +199,18 @@ class PaymongoService
 
             return $payment->enrollment;
         }
+    }
+
+    /**
+     * Whether this enrollment still has PayMongo checkout sessions awaiting local sync.
+     */
+    public function hasPendingCheckoutSessions(Enrollment $enrollment): bool
+    {
+        return Payment::query()
+            ->where('enrollment_id', $enrollment->getKey())
+            ->where('status', 'pending')
+            ->whereNotNull('paymongo_checkout_session_id')
+            ->exists();
     }
 
     /**
@@ -223,9 +232,28 @@ class PaymongoService
             ->filter()
             ->values();
 
-        foreach ($sessionIds as $checkoutSessionId) {
-            $this->syncCheckoutSessionStatus((string) $checkoutSessionId);
+        if ($sessionIds->isEmpty()) {
+            return;
         }
+
+        foreach ($sessionIds as $checkoutSessionId) {
+            $this->syncCheckoutSessionStatus((string) $checkoutSessionId, recalculateFinancials: false);
+        }
+
+        $this->enrollmentFinancialService->recalculateEnrollmentFinancials($enrollment->fresh());
+    }
+
+    /**
+     * HTTP client tuned for checkout status polling (short timeout, minimal retries).
+     */
+    private function paymongoStatusClient()
+    {
+        $timeout = max(1, (int) config('services.paymongo.status_sync_timeout', 5));
+
+        return Http::withBasicAuth((string) config('services.paymongo.secret_key'), '')
+            ->acceptJson()
+            ->timeout($timeout)
+            ->retry(1, 200);
     }
 
     public function handleWebhook(string $rawPayload, ?string $signatureHeader): array

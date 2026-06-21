@@ -192,4 +192,68 @@ class EnrollmentSuccessPageSyncsPendingPaymentTest extends TestCase
 
         Carbon::setTestNow();
     }
+
+    public function test_success_page_skips_paymongo_sync_for_bank_transfer_submissions(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-06-01', 'Asia/Manila')->startOfDay());
+
+        $program = Program::create([
+            'name' => 'Program Bank Transfer',
+            'slug' => 'program-bank-transfer',
+            'category' => 'Individual Programs (Theoretical)',
+            'tag' => null,
+            'price_full' => 30_000,
+            'price_early' => 24_000,
+            'early_deadline' => '2026-07-15',
+            'early_bird_label' => 'Early',
+            'is_active' => true,
+            'sort_order' => 0,
+        ]);
+
+        $enrollment = app(EnrollmentService::class)->createEnrollment([
+            'program' => 'program-bank-transfer',
+            'schedule_id' => null,
+            'first_name' => 'Bank',
+            'middle_name' => null,
+            'surname' => 'Transfer',
+            'birthday' => '2000-01-01',
+            'sex' => 'Female',
+            'phone' => '09171234567',
+            'email' => 'bank@example.com',
+            'facebook_messenger_name' => 'Bank Transfer',
+            'facebook_messenger_url' => null,
+            'addr_street' => '1 Main',
+            'addr_city' => 'Manila',
+            'addr_province' => 'Metro Manila',
+            'addr_zip' => '1000',
+            'deliv_street' => null,
+            'deliv_city' => null,
+            'deliv_province' => null,
+            'deliv_zip' => null,
+            'school' => 'U',
+            'year_level' => 'Graduate',
+            'year_graduated' => '2024',
+            'taker_status' => 'First taker',
+            'payment_type' => 'downpayment',
+        ]);
+
+        Payment::query()->create([
+            'enrollment_id' => $enrollment->id,
+            'purpose' => Payment::PURPOSE_INITIAL,
+            'payment_method' => 'bank_transfer',
+            'amount' => (15_000 + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
+            'currency' => 'PHP',
+            'tuition_amount' => 15_000,
+            'status' => 'submitted',
+        ]);
+
+        Http::fake();
+
+        $response = $this->get(route('enroll.success', ['ref' => $enrollment->reference_number]));
+
+        $response->assertOk();
+        Http::assertNothingSent();
+
+        Carbon::setTestNow();
+    }
 }

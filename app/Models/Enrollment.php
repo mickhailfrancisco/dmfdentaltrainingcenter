@@ -7,12 +7,15 @@ namespace App\Models;
 use App\Enums\EnrollmentStatus;
 use App\Services\EnrollmentPricingService;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Enrollment extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         // Reference & status
         'reference_number', 'status',

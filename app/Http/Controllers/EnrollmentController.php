@@ -10,7 +10,9 @@ use App\Models\Program;
 use App\Services\BankTransferService;
 use App\Services\EnrollmentFinancialService;
 use App\Services\EnrollmentService;
+use App\Services\EnrollmentSuccessService;
 use App\Services\PaymongoService;
+use App\Support\Filament\CatalogOptionsCache;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -21,6 +23,7 @@ class EnrollmentController extends Controller
         protected PaymongoService $paymongoService,
         protected EnrollmentFinancialService $enrollmentFinancialService,
         protected BankTransferService $bankTransferService,
+        protected EnrollmentSuccessService $enrollmentSuccessService,
     ) {}
 
     /**
@@ -28,11 +31,7 @@ class EnrollmentController extends Controller
      */
     public function landing()
     {
-        $packages = Package::query()
-            ->where('is_active', true)
-            ->with(['programs:id,name,slug'])
-            ->orderBy('sort_order')
-            ->get();
+        $packages = CatalogOptionsCache::landingPagePackages();
 
         return view('enrollment.landing', compact('packages'));
     }
@@ -46,11 +45,7 @@ class EnrollmentController extends Controller
             $request->session()->forget('enrollment_data');
         }
 
-        $packages = Package::query()
-            ->where('is_active', true)
-            ->with(['programs:id,name,slug'])
-            ->orderBy('sort_order')
-            ->get();
+        $packages = CatalogOptionsCache::landingPagePackages();
 
         $programCategories = $this->enrollmentService->getGroupedActivePrograms();
         $oldData = session('enrollment_data', []);
@@ -170,15 +165,16 @@ class EnrollmentController extends Controller
 
         $referenceNumber = $request->query('ref') ?: $request->session()->get('latest_enrollment_ref');
         if ($referenceNumber) {
-            $enrollment = Enrollment::with(['purchasable', 'payments', 'items.program'])
-                ->where('reference_number', $referenceNumber)
-                ->first();
+            $enrollment = $this->enrollmentSuccessService->resolveEnrollmentByReference($referenceNumber);
         }
 
         if (! $enrollment) {
             $checkoutSessionId = $request->query('checkout_session_id') ?: $request->query('id');
             if ($checkoutSessionId) {
                 $enrollment = $this->paymongoService->syncCheckoutSessionStatus($checkoutSessionId);
+                if ($enrollment) {
+                    $enrollment = $this->enrollmentSuccessService->reloadEnrollment($enrollment);
+                }
             }
         }
 
@@ -187,15 +183,8 @@ class EnrollmentController extends Controller
                 ->with('error', 'Enrollment session not found. Please try again.');
         }
 
-        // success_url only includes ?ref=… — PayMongo may not have delivered the webhook yet,
-        // so the initial payment row can still be "pending". Sync checkout status before ledger math.
-        $this->paymongoService->syncPendingCheckoutSessionsForEnrollment($enrollment);
-        $enrollment->refresh();
-        $enrollment->load('payments');
-
-        $this->enrollmentFinancialService->recalculateEnrollmentFinancials($enrollment);
-        $enrollment->refresh();
-        $enrollment->load('payments');
+        $enrollment = $this->enrollmentSuccessService->prepareEnrollmentForDisplay($enrollment);
+        $pricingSnapshot = $this->enrollmentSuccessService->pricingSnapshot($enrollment);
 
         $request->session()->forget(['current_enrollment_id', 'enrollment_data', 'latest_enrollment_ref', 'latest_payment_id', 'balance_checkout_enrollment_id']);
 
@@ -203,6 +192,8 @@ class EnrollmentController extends Controller
             'enrollment' => $enrollment,
             'purchasable' => $enrollment->purchasable,
             'items' => $enrollment->items,
+            'balanceTuitionDue' => $pricingSnapshot['balance_tuition_due'],
+            'applicableTuitionTotal' => $pricingSnapshot['applicable_tuition_total'],
         ]);
     }
 

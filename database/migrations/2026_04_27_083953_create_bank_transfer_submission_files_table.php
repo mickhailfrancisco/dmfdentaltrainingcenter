@@ -12,6 +12,7 @@ return new class extends Migration
     {
         Schema::create('bank_transfer_submission_files', function (Blueprint $table) {
             $table->id();
+            // Explicit FK name: auto-generated name exceeds MySQL's 64-char identifier limit.
             $table->foreignId('bank_transfer_submission_id')
                 ->constrained('bank_transfer_submissions', 'id', 'bt_files_submission_fk')
                 ->cascadeOnDelete();

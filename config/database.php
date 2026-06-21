@@ -95,6 +95,12 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => 'prefer',
+            // Required when using Supabase/PgBouncer transaction-mode pooler (port 6543).
+            // PgBouncer discards server-side prepared statements between transactions;
+            // emulating them client-side avoids the "prepared statement does not exist" error.
+            'options' => [
+                PDO::ATTR_EMULATE_PREPARES => true,
+            ],
         ],
 
         'sqlsrv' => [

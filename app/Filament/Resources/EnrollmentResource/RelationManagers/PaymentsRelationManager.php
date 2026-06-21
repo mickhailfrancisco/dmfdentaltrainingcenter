@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\EnrollmentResource\RelationManagers;
 
-use App\Models\Enrollment;
 use App\Services\BankTransferService;
 use App\Support\PermissionCodes;
 use Filament\Notifications\Notification;
@@ -51,18 +50,7 @@ class PaymentsRelationManager extends RelationManager
 
     public function table(Table $table): Table
     {
-        /** @var Enrollment $owner */
-        $owner = $this->getOwnerRecord();
-
-        $tuitionPaid = (int) $owner->amount_paid_tuition;
-        $remaining = (int) $owner->computed_balance_tuition_due;
-
         return $table
-            ->description(sprintf(
-                'Tuition paid: ₱%s · Remaining: ₱%s',
-                number_format($tuitionPaid),
-                number_format($remaining),
-            ))
             ->modifyQueryUsing(fn ($query) => $query->with([
                 'bankTransferSubmission' => fn ($submissionQuery) => $submissionQuery->with('files'),
             ]))
@@ -234,13 +222,7 @@ class PaymentsRelationManager extends RelationManager
                             ->send();
                     })
                     ->after(function ($livewire): void {
-                        if (method_exists($livewire, 'resetTable')) {
-                            $livewire->resetTable();
-                        }
-
-                        if (method_exists($livewire, 'getOwnerRecord')) {
-                            $livewire->getOwnerRecord()->refresh();
-                        }
+                        $livewire->redirect(request()->fullUrl(), navigate: false);
                     }),
             ])
             ->defaultSort('paid_at', 'desc')

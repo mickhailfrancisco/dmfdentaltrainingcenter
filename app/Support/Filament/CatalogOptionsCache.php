@@ -7,6 +7,7 @@ namespace App\Support\Filament;
 use App\Models\Category;
 use App\Models\Package;
 use App\Models\Program;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -21,6 +22,8 @@ final class CatalogOptionsCache
     private const KEY_PROGRAMS = 'filament.catalog.program_options';
 
     private const KEY_CATEGORIES = 'filament.catalog.category_options';
+
+    private const KEY_LANDING_PACKAGES = 'catalog.landing_page_packages';
 
     /**
      * @return array<string, string>
@@ -68,10 +71,27 @@ final class CatalogOptionsCache
         });
     }
 
+    /**
+     * Cached active packages with programs for the public enrollment pages.
+     *
+     * @return Collection<int, Package>
+     */
+    public static function landingPagePackages(): Collection
+    {
+        return Cache::remember(self::KEY_LANDING_PACKAGES, self::TTL_SECONDS, function (): Collection {
+            return Package::query()
+                ->where('is_active', true)
+                ->with(['programs:id,name,slug'])
+                ->orderBy('sort_order')
+                ->get();
+        });
+    }
+
     public static function forgetAll(): void
     {
         Cache::forget(self::KEY_PURCHASED_ITEMS);
         Cache::forget(self::KEY_PROGRAMS);
         Cache::forget(self::KEY_CATEGORIES);
+        Cache::forget(self::KEY_LANDING_PACKAGES);
     }
 }
