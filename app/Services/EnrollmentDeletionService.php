@@ -24,6 +24,10 @@ class EnrollmentDeletionService
             return false;
         }
 
+        if (array_key_exists('has_blocking_payment', $enrollment->getAttributes())) {
+            return ! (bool) $enrollment->getAttribute('has_blocking_payment');
+        }
+
         return ! $enrollment->payments()
             ->whereIn('status', ['paid', 'submitted'])
             ->exists();
