@@ -19,7 +19,7 @@ class ManualPaymentChannelService
 
     public function disk(): string
     {
-        return (string) config('manual-payment.disk', 'public');
+        return (string) config('manual-payment.disk', 'dmf_s3');
     }
 
     public function qrDirectory(): string

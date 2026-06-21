@@ -24,9 +24,9 @@ class ManualPaymentChannelTest extends TestCase
 
         Filament::setCurrentPanel(Filament::getPanel('admin'));
 
-        Storage::fake('s3');
+        Storage::fake('dmf_s3');
         config([
-            'manual-payment.disk' => 's3',
+            'manual-payment.disk' => 'dmf_s3',
             'manual-payment.qr_directory' => 'manual-payment/qr',
             'manual-payment.logo_directory' => 'manual-payment/logos',
         ]);
@@ -214,7 +214,7 @@ class ManualPaymentChannelTest extends TestCase
         $this->assertNotNull($channel->qr_path);
         $this->assertStringStartsWith('manual-payment/qr/', (string) $channel->qr_path);
         $this->assertSame($originalLogoPath, $channel->logo_path);
-        Storage::disk('s3')->assertExists((string) $channel->qr_path);
+        Storage::disk('dmf_s3')->assertExists((string) $channel->qr_path);
     }
 
     public function test_replacing_qr_deletes_previous_object_from_disk(): void
@@ -227,8 +227,8 @@ class ManualPaymentChannelTest extends TestCase
         $firstPath = 'manual-payment/qr/bpi-first.jpg';
         $secondPath = 'manual-payment/qr/bpi-second.jpg';
 
-        Storage::disk('s3')->put($firstPath, 'first-image');
-        Storage::disk('s3')->put($secondPath, 'second-image');
+        Storage::disk('dmf_s3')->put($firstPath, 'first-image');
+        Storage::disk('dmf_s3')->put($secondPath, 'second-image');
 
         $service->updateChannel($channel, [
             'display_name' => $channel->display_name,
@@ -238,7 +238,7 @@ class ManualPaymentChannelTest extends TestCase
             'qr_path' => $firstPath,
         ]);
 
-        Storage::disk('s3')->assertExists($firstPath);
+        Storage::disk('dmf_s3')->assertExists($firstPath);
 
         $service->updateChannel($channel->fresh(), [
             'display_name' => $channel->display_name,
@@ -248,8 +248,8 @@ class ManualPaymentChannelTest extends TestCase
             'qr_path' => $secondPath,
         ]);
 
-        Storage::disk('s3')->assertMissing($firstPath);
-        Storage::disk('s3')->assertExists($secondPath);
+        Storage::disk('dmf_s3')->assertMissing($firstPath);
+        Storage::disk('dmf_s3')->assertExists($secondPath);
         $this->assertSame($secondPath, $channel->fresh()->qr_path);
     }
 
@@ -263,7 +263,7 @@ class ManualPaymentChannelTest extends TestCase
         $legacyPath = 'images/banks/qr/chinabank_qr.jpg';
         $newPath = 'manual-payment/qr/chinabank-new.jpg';
 
-        Storage::disk('s3')->put($newPath, 'new-image');
+        Storage::disk('dmf_s3')->put($newPath, 'new-image');
 
         $service->updateChannel($channel, [
             'display_name' => $channel->display_name,
