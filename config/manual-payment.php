@@ -2,21 +2,18 @@
 
 declare(strict_types=1);
 
-$filesystemDisk = env('FILESYSTEM_DISK', 'local');
-
 return [
     /*
     |--------------------------------------------------------------------------
     | Manual Payment Channel Storage
     |--------------------------------------------------------------------------
     |
-    | Disk used for admin-managed QR codes and bank logos. Defaults to s3 when
-    | FILESYSTEM_DISK=s3 (Laravel Cloud). Use MANUAL_PAYMENT_DISK=public for
-    | local development without S3 credentials.
+    | Uses the dmf_s3 disk (matches Laravel Cloud LARAVEL_CLOUD_DISK_CONFIG). Configure
+    | AWS_* in .env locally; Cloud injects credentials for dmf_s3 at boot.
     |
     */
 
-    'disk' => env('MANUAL_PAYMENT_DISK', $filesystemDisk === 's3' ? 's3' : 'public'),
+    'disk' => env('MANUAL_PAYMENT_DISK', 'dmf_s3'),
 
     'qr_directory' => env('MANUAL_PAYMENT_QR_DIRECTORY', 'manual-payment/qr'),
 
