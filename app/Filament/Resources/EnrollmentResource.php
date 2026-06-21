@@ -234,6 +234,32 @@ class EnrollmentResource extends Resource
     }
 
     /**
+     * Eager-load flags for the enrollment index table (avoids N+1 on row actions).
+     */
+    public static function applyListTableQuery(Builder $query): Builder
+    {
+        return $query
+            ->with([
+                'payments' => fn ($paymentQuery) => $paymentQuery
+                    ->where('status', 'paid')
+                    ->orderBy('paid_at')
+                    ->orderBy('id')
+                    ->with('bankTransferSubmission'),
+            ])
+            ->withExists([
+                'payments as has_submitted_initial_bank_transfer' => function (Builder $paymentQuery): void {
+                    $paymentQuery
+                        ->where('purpose', Payment::PURPOSE_INITIAL)
+                        ->where('payment_method', 'bank_transfer')
+                        ->where('status', 'submitted');
+                },
+                'payments as has_blocking_payment' => function (Builder $paymentQuery): void {
+                    $paymentQuery->whereIn('status', ['paid', 'submitted']);
+                },
+            ]);
+    }
+
+    /**
      * Eager-load relations used on the enrollment view page and bank-transfer exists flag.
      */
     public static function applyViewPageQuery(Builder $query): Builder
@@ -532,14 +558,7 @@ class EnrollmentResource extends Resource
             ->filtersFormWidth(MaxWidth::TwoExtraLarge)
             ->filtersFormColumns(2)
             ->modifyQueryUsing(function (Builder $query): Builder {
-                return $query->withExists([
-                    'payments as has_submitted_initial_bank_transfer' => function (Builder $paymentQuery): void {
-                        $paymentQuery
-                            ->where('purpose', Payment::PURPOSE_INITIAL)
-                            ->where('payment_method', 'bank_transfer')
-                            ->where('status', 'submitted');
-                    },
-                ]);
+                return static::applyListTableQuery($query);
             })
             ->columns([
                 Tables\Columns\TextColumn::make('reference_number')

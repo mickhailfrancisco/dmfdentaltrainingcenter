@@ -673,3 +673,40 @@ aside.fi-sidebar {
 .fi-modal .fi-modal-close-overlay + .fixed.inset-0 {
     z-index: 60 !important;
 }
+
+/* ---- Payment channels: current QR field ---- */
+.dmf-qr-current.fi-fo-component-ctn {
+    margin-bottom: 0 !important;
+}
+
+.dmf-qr-current__body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.dmf-qr-current__filename {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    padding: 0.5rem 0.75rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.25rem;
+    color: rgb(55 65 81);
+    word-break: break-all;
+    background-color: rgb(249 250 251);
+    border: 1px solid rgb(229 231 235);
+    border-radius: 0.5rem;
+}
+
+.dmf-qr-current__thumb {
+    display: block;
+    width: 7.5rem;
+    height: 7.5rem;
+    object-fit: contain;
+    background-color: rgb(255 255 255);
+    border: 1px solid rgb(229 231 235);
+    border-radius: 0.5rem;
+}
