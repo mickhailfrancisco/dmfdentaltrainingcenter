@@ -10,6 +10,7 @@ use App\Models\Package;
 use App\Models\Payment;
 use App\Models\Program;
 use App\Models\User;
+use App\Services\EnrollmentDeletionService;
 use App\Support\Filament\CatalogOptionsCache;
 use App\Support\PermissionCodes;
 use Filament\Forms\Components\DatePicker;
@@ -133,7 +134,22 @@ class EnrollmentResource extends Resource
 
     public static function canDelete(Model $record): bool
     {
-        return false;
+        if (! $record instanceof Enrollment) {
+            return false;
+        }
+
+        /** @var User|null $user */
+        $user = Auth::user();
+
+        if (! $user) {
+            return false;
+        }
+
+        if (! $user->isAdmin() && ! $user->hasPermission(PermissionCodes::ENROLLMENT_ACTION_DELETE)) {
+            return false;
+        }
+
+        return app(EnrollmentDeletionService::class)->canDelete($record);
     }
 
     public static function getBreadcrumb(): string
@@ -295,6 +311,18 @@ class EnrollmentResource extends Resource
                         ->visible(fn (): bool => static::viewerCan(PermissionCodes::ENROLLMENT_DETAIL_PLAN_CHECKOUT)),
                 ])
                 ->columns(['default' => 2, 'md' => 3, 'xl' => 4])
+                ->columnSpanFull(),
+
+            Infolists\Components\Section::make('Staff notes')
+                ->description('Internal notes for this enrollment. Not visible to students.')
+                ->icon('heroicon-o-pencil-square')
+                ->visible(fn (): bool => static::viewerCan(PermissionCodes::ENROLLMENT_DETAIL_NOTES))
+                ->schema([
+                    Infolists\Components\TextEntry::make('notes')
+                        ->label('Notes')
+                        ->placeholder('No notes yet.')
+                        ->columnSpanFull(),
+                ])
                 ->columnSpanFull(),
 
             Infolists\Components\Grid::make(['default' => 1, 'lg' => 2])
@@ -751,6 +779,24 @@ class EnrollmentResource extends Resource
                 Tables\Actions\ViewAction::make()
                     ->iconButton()
                     ->tooltip('View Enrollment Record'),
+                Tables\Actions\DeleteAction::make()
+                    ->iconButton()
+                    ->tooltip('Delete abandoned enrollment')
+                    ->visible(fn (Enrollment $record): bool => static::canDelete($record))
+                    ->requiresConfirmation()
+                    ->modalHeading('Delete enrollment?')
+                    ->modalDescription(fn (Enrollment $record): string => sprintf(
+                        'Permanently remove %s (%s). Only use for duplicate or abandoned enrollments with no payment.',
+                        static::getRecordTitle($record),
+                        $record->reference_number,
+                    ))
+                    ->using(function (Enrollment $record): void {
+                        /** @var User $user */
+                        $user = Auth::user();
+
+                        app(EnrollmentDeletionService::class)->delete($record, $user);
+                    })
+                    ->successRedirectUrl(fn (): string => static::getUrl('index')),
             ])
             ->bulkActions([]);  // No bulk delete
     }

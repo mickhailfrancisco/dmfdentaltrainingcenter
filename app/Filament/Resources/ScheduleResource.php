@@ -5,7 +5,6 @@ namespace App\Filament\Resources;
 use App\Filament\Concerns\ChecksCatalogPermissions;
 use App\Filament\Resources\ScheduleResource\Pages;
 use App\Models\Schedule;
-use App\Models\SchoolYear;
 use App\Support\Filament\CatalogOptionsCache;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -47,13 +46,6 @@ class ScheduleResource extends Resource
                         ->preload()
                         ->required(),
 
-                    Forms\Components\Select::make('school_year_id')
-                        ->label('School Year')
-                        ->options(fn (): array => SchoolYear::orderBy('start_date', 'desc')->pluck('label', 'id')->all())
-                        ->searchable()
-                        ->preload()
-                        ->nullable(),
-
                     Forms\Components\TextInput::make('label')
                         ->required()
                         ->maxLength(255)
@@ -91,12 +83,6 @@ class ScheduleResource extends Resource
                     ->wrap()
                     ->weight('bold'),
 
-                Tables\Columns\TextColumn::make('schoolYear.label')
-                    ->label('School Year')
-                    ->sortable()
-                    ->placeholder('—')
-                    ->toggleable(),
-
                 Tables\Columns\TextColumn::make('label')
                     ->searchable()
                     ->sortable()
@@ -123,10 +109,6 @@ class ScheduleResource extends Resource
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
-                Tables\Filters\SelectFilter::make('school_year_id')
-                    ->label('School Year')
-                    ->options(fn (): array => SchoolYear::orderBy('start_date', 'desc')->pluck('label', 'id')->all()),
-
                 Tables\Filters\TernaryFilter::make('is_active')
                     ->label('Active'),
             ])
@@ -146,7 +128,7 @@ class ScheduleResource extends Resource
                 Tables\Actions\DeleteBulkAction::make()
                     ->visible(fn (): bool => false),
             ])
-            ->modifyQueryUsing(fn (Builder $query) => $query->with(['program', 'schoolYear'])->withCount('enrollmentItems'));
+            ->modifyQueryUsing(fn (Builder $query) => $query->with('program')->withCount('enrollmentItems'));
     }
 
     public static function getPages(): array

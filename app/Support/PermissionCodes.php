@@ -25,6 +25,8 @@ final class PermissionCodes
 
     public const ENROLLMENT_DETAIL_TUITION_BALANCE = 'enrollment.detail.tuition_balance';
 
+    public const ENROLLMENT_DETAIL_NOTES = 'enrollment.detail.notes';
+
     public const ENROLLMENT_LIST_FIRST_PAYMENT = 'enrollment.list.first_payment';
 
     public const ENROLLMENT_LIST_EXPORT = 'enrollment.list.export';
@@ -38,6 +40,10 @@ final class PermissionCodes
     public const ENROLLMENT_ACTION_VERIFY_BANK_TRANSFER = 'enrollment.action.verify_bank_transfer';
 
     public const ENROLLMENT_ACTION_REFRESH_PAYMENT_TOTALS = 'enrollment.action.refresh_payment_totals';
+
+    public const ENROLLMENT_ACTION_EDIT_NOTES = 'enrollment.action.edit_notes';
+
+    public const ENROLLMENT_ACTION_DELETE = 'enrollment.action.delete';
 
     public const ENROLLMENT_RELATION_PAYMENTS = 'enrollment.relation.payments';
 
@@ -103,6 +109,7 @@ final class PermissionCodes
             self::ENROLLMENT_DETAIL_PLAN_CHECKOUT,
             self::ENROLLMENT_DETAIL_PLAN_FINANCIAL,
             self::ENROLLMENT_DETAIL_TUITION_BALANCE,
+            self::ENROLLMENT_DETAIL_NOTES,
             self::ENROLLMENT_RELATION_PAYMENTS,
             self::ENROLLMENT_ACTION_VERIFY_BANK_TRANSFER,
         ];
@@ -137,6 +144,7 @@ final class PermissionCodes
             self::ENROLLMENT_DETAIL_PLAN_CHECKOUT => 'Enrollment — Plan & checkout (status, reference, program, plan type, dates)',
             self::ENROLLMENT_DETAIL_PLAN_FINANCIAL => 'Enrollment — First checkout amounts (base, fee, total)',
             self::ENROLLMENT_DETAIL_TUITION_BALANCE => 'Enrollment — Tuition & balance section',
+            self::ENROLLMENT_DETAIL_NOTES => 'Enrollment — Staff notes section',
             self::ENROLLMENT_LIST_FIRST_PAYMENT => 'Enrollment list — First payment column',
             self::ENROLLMENT_LIST_EXPORT => 'Enrollment list — Export CSV',
             self::ENROLLMENT_ACTION_COPY_PAY_BALANCE_LINK => 'Enrollment — Copy payment link (table & record)',
@@ -144,6 +152,8 @@ final class PermissionCodes
             self::ENROLLMENT_ACTION_COPY_BANK_TRANSFER_LINK => 'Enrollment — Copy bank transfer link (legacy)',
             self::ENROLLMENT_ACTION_VERIFY_BANK_TRANSFER => 'Enrollment — Verify bank transfer payments',
             self::ENROLLMENT_ACTION_REFRESH_PAYMENT_TOTALS => 'Enrollment — Refresh payment totals (enrollment record)',
+            self::ENROLLMENT_ACTION_EDIT_NOTES => 'Enrollment — Edit staff notes',
+            self::ENROLLMENT_ACTION_DELETE => 'Enrollment — Delete abandoned enrollments',
             self::ENROLLMENT_RELATION_PAYMENTS => 'Enrollment record — Payments tab',
             self::CATALOG_CATEGORIES_VIEW => 'Catalog — Categories (view)',
             self::CATALOG_CATEGORIES_CREATE => 'Catalog — Categories (create)',
@@ -231,6 +241,7 @@ final class PermissionCodes
             self::ENROLLMENT_DETAIL_PLAN_CHECKOUT => 'Plan & checkout (status, reference, program, dates)',
             self::ENROLLMENT_DETAIL_PLAN_FINANCIAL => 'First checkout amounts (base, fee, total)',
             self::ENROLLMENT_DETAIL_TUITION_BALANCE => 'Tuition & balance',
+            self::ENROLLMENT_DETAIL_NOTES => 'Staff notes',
         ];
     }
 
@@ -247,6 +258,8 @@ final class PermissionCodes
             self::ENROLLMENT_ACTION_COPY_PAY_BALANCE_LINK => 'Copy payment link (table & record)',
             self::ENROLLMENT_ACTION_VERIFY_BANK_TRANSFER => 'Verify bank transfers (Payments tab + actions)',
             self::ENROLLMENT_ACTION_REFRESH_PAYMENT_TOTALS => 'Refresh payment totals (enrollment record)',
+            self::ENROLLMENT_ACTION_EDIT_NOTES => 'Edit staff notes (enrollment record)',
+            self::ENROLLMENT_ACTION_DELETE => 'Delete abandoned enrollments (list & record)',
             self::ENROLLMENT_RELATION_PAYMENTS => 'Enrollment record — Payments tab',
         ];
     }

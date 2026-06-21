@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\EnrollmentResource;
 use App\Filament\Resources\EnrollmentResource\Pages\ViewEnrollment;
 use App\Filament\Resources\EnrollmentResource\RelationManagers\PaymentsRelationManager;
 use App\Models\BankTransferSubmission;
@@ -11,6 +12,7 @@ use App\Models\Enrollment;
 use App\Models\Payment;
 use App\Models\Program;
 use App\Models\User;
+use App\Services\BankTransferService;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -30,7 +32,7 @@ class BankTransferVerifyAtomicityTest extends TestCase
         ]);
 
         $enrollment = Enrollment::create([
-            'reference_number' => 'DMF-VRF-' . Str::upper(Str::random(4)),
+            'reference_number' => 'DMF-VRF-'.Str::upper(Str::random(4)),
             'payment_type' => 'downpayment',
             'purchasable_type' => 'program',
             'purchasable_id' => $program->getKey(),
@@ -114,7 +116,7 @@ class BankTransferVerifyAtomicityTest extends TestCase
 
         $this->assertSame(0, (int) $enrollment->fresh()->amount_paid_tuition);
 
-        app(\App\Services\BankTransferService::class)->verifyPayment($payment, $admin);
+        app(BankTransferService::class)->verifyPayment($payment, $admin);
 
         $fresh = $enrollment->fresh();
         $this->assertSame('paid', $payment->fresh()->status);
@@ -123,7 +125,7 @@ class BankTransferVerifyAtomicityTest extends TestCase
         $this->assertSame('partially_paid', (string) $fresh->status->value);
     }
 
-    public function test_verify_bank_transfer_action_redirects_after_success(): void
+    public function test_verify_bank_transfer_action_redirects_to_enrollment_view_after_success(): void
     {
         [$enrollment, $payment] = $this->makeEnrollmentWithPendingBankTransfer();
 
@@ -135,6 +137,6 @@ class BankTransferVerifyAtomicityTest extends TestCase
                 'pageClass' => ViewEnrollment::class,
             ])
             ->callTableAction('verifyBankTransfer', $payment)
-            ->assertRedirect();
+            ->assertRedirect(EnrollmentResource::getUrl('view', ['record' => $enrollment]));
     }
 }

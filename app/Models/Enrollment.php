@@ -50,6 +50,9 @@ class Enrollment extends Model
         'tuition_discount_label',
         'amount_paid_tuition',
         'balance_tuition_due',
+
+        // Staff notes
+        'notes',
     ];
 
     protected $casts = [

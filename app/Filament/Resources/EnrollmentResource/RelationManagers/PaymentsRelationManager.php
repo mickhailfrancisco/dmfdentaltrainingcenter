@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\EnrollmentResource\RelationManagers;
 
+use App\Filament\Resources\EnrollmentResource;
 use App\Services\BankTransferService;
 use App\Support\PermissionCodes;
 use Filament\Notifications\Notification;
@@ -221,8 +222,12 @@ class PaymentsRelationManager extends RelationManager
                             ->success()
                             ->send();
                     })
-                    ->after(function ($livewire): void {
-                        $livewire->redirect(request()->fullUrl(), navigate: false);
+                    ->after(function (PaymentsRelationManager $livewire): void {
+                        // Livewire POST requests use /livewire/update — never redirect to request()->fullUrl().
+                        $livewire->redirect(
+                            EnrollmentResource::getUrl('view', ['record' => $livewire->getOwnerRecord()]),
+                            navigate: false,
+                        );
                     }),
             ])
             ->defaultSort('paid_at', 'desc')

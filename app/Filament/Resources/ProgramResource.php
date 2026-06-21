@@ -46,6 +46,9 @@ class ProgramResource extends Resource
                         ->maxLength(255),
 
                     Forms\Components\TextInput::make('slug')
+                        ->label('Program code')
+                        ->helperText('Short unique ID for enrollment links (e.g. hybrid-intensive). Use lowercase letters, numbers, and hyphens. Students see the program name, not this code.')
+                        ->placeholder('e.g. hybrid-intensive')
                         ->required()
                         ->maxLength(255)
                         ->unique(ignoreRecord: true),
@@ -141,6 +144,7 @@ class ProgramResource extends Resource
                     ->weight('bold'),
 
                 Tables\Columns\TextColumn::make('slug')
+                    ->label('Program code')
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->fontFamily('mono'),
