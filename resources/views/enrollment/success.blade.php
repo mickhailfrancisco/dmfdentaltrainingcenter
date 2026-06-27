@@ -199,7 +199,6 @@
                 <h3 class="text-sm font-bold text-gray-700 mb-3">What happens next?</h3>
                 <div class="space-y-2.5">
                     @php
-                    $agreementSubmissionEmail = config('enrollment.agreement.submission_email');
                     $agreementMailtoSubject = rawurlencode('Signed Enrollment Agreement — ' . $enrollment->reference_number);
                     $agreementMailtoBody = rawurlencode(
                         "Hello,\n\nPlease find my signed enrollment agreement attached.\n\nReference No.: {$enrollment->reference_number}\nName: {$enrollment->full_name}\n\nThank you."
@@ -207,7 +206,7 @@
                     $agreementMailtoUrl = "mailto:{$agreementSubmissionEmail}?subject={$agreementMailtoSubject}&body={$agreementMailtoBody}";
                     $nextSteps = [
                         ['step' => '1', 'text' => 'Download the enrollment agreement using the button below.'],
-                        ['step' => '2', 'html' => 'Sign the agreement and email it to <a href="' . e($agreementMailtoUrl) . '" class="text-brand-600 hover:underline font-medium">' . e($agreementSubmissionEmail) . '</a>. Include reference no. <span class="font-mono font-semibold text-gray-800">' . e($enrollment->reference_number) . '</span> in the subject line.'],
+                        ['step' => '2', 'html' => 'Sign the form (print and scan, or sign digitally), then email a copy to <a href="' . e($agreementMailtoUrl) . '" class="text-brand-600 hover:underline font-medium">' . e($agreementSubmissionEmail) . '</a>. Use reference no. <span class="font-mono font-semibold text-gray-800">' . e($enrollment->reference_number) . '</span> in the email subject so we can match it to your enrollment.'],
                         ['step' => '3', 'text' => 'Our team will verify your enrollment within 24 hours.'],
                         ['step' => '4', 'text' => 'Join your first session on your scheduled date. Good luck!'],
                     ];

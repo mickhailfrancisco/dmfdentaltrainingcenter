@@ -6,20 +6,18 @@ namespace App\Services;
 
 use App\Models\Enrollment;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class EnrollmentAgreementService
 {
+    public function __construct(
+        private readonly EnrollmentAgreementSettingService $settings,
+    ) {}
+
     /**
      * Resolve an enrollment by its public reference number.
-     *
-     * @param  string  $referenceNumber  Enrollment reference from the success page URL.
-     *
-     * @author CKD
-     *
-     * @created 2026-06-19
-     *
-     * @modified 2026-06-19 CKD
      */
     public function resolveEnrollment(string $referenceNumber): Enrollment
     {
@@ -33,25 +31,29 @@ class EnrollmentAgreementService
     }
 
     /**
-     * Stream the static enrollment agreement file for a valid enrollment.
-     *
-     * @param  string  $referenceNumber  Enrollment reference from the success page URL.
-     *
-     * @author CKD
-     *
-     * @created 2026-06-19
-     *
-     * @modified 2026-06-19 CKD
+     * Stream the enrollment agreement file for a valid enrollment reference.
      */
-    public function download(string $referenceNumber): BinaryFileResponse
+    public function download(string $referenceNumber): StreamedResponse|BinaryFileResponse
     {
         $this->resolveEnrollment($referenceNumber);
 
-        $path = (string) config('enrollment.agreement.path');
-        $filename = trim((string) config('enrollment.agreement.download_filename'));
-        if ($filename === '') {
-            $filename = basename($path);
+        $filename = $this->settings->effectiveDownloadFilename();
+
+        if ($this->settings->hasStoredFile()) {
+            $path = (string) $this->settings->current()?->file_path;
+
+            return Storage::disk($this->settings->disk())->download($path, $filename, [
+                'Content-Type' => $this->contentTypeForPath($filename),
+                'X-Content-Type-Options' => 'nosniff',
+            ]);
         }
+
+        return $this->downloadLegacyFile($referenceNumber, $filename);
+    }
+
+    private function downloadLegacyFile(string $referenceNumber, string $filename): BinaryFileResponse
+    {
+        $path = (string) config('enrollment.agreement.path');
 
         if (! is_file($path) || ! is_readable($path)) {
             Log::error('Enrollment agreement file is missing or unreadable.', [
@@ -68,17 +70,6 @@ class EnrollmentAgreementService
         ]);
     }
 
-    /**
-     * Resolve the HTTP content type for a supported agreement file extension.
-     *
-     * @param  string  $path  Absolute path to the agreement file on disk.
-     *
-     * @author CKD
-     *
-     * @created 2026-06-19
-     *
-     * @modified 2026-06-19 CKD
-     */
     private function contentTypeForPath(string $path): string
     {
         return match (strtolower(pathinfo($path, PATHINFO_EXTENSION))) {

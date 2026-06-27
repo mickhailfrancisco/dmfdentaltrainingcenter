@@ -8,6 +8,7 @@ use App\Models\Enrollment;
 use App\Models\Package;
 use App\Models\Program;
 use App\Services\BankTransferService;
+use App\Services\EnrollmentAgreementSettingService;
 use App\Services\EnrollmentFinancialService;
 use App\Services\EnrollmentService;
 use App\Services\EnrollmentSuccessService;
@@ -24,6 +25,7 @@ class EnrollmentController extends Controller
         protected EnrollmentFinancialService $enrollmentFinancialService,
         protected BankTransferService $bankTransferService,
         protected EnrollmentSuccessService $enrollmentSuccessService,
+        protected EnrollmentAgreementSettingService $enrollmentAgreementSettingService,
     ) {}
 
     /**
@@ -194,6 +196,7 @@ class EnrollmentController extends Controller
             'items' => $enrollment->items,
             'balanceTuitionDue' => $pricingSnapshot['balance_tuition_due'],
             'applicableTuitionTotal' => $pricingSnapshot['applicable_tuition_total'],
+            'agreementSubmissionEmail' => $this->enrollmentAgreementSettingService->effectiveSubmissionEmail(),
         ]);
     }
 
