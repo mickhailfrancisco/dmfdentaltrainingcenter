@@ -6,9 +6,12 @@ namespace Tests\Feature;
 
 use App\Models\Enrollment;
 use App\Models\Program;
+use App\Models\User;
+use App\Services\EnrollmentAgreementSettingService;
 use App\Services\EnrollmentService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class EnrollmentAgreementDownloadTest extends TestCase
@@ -25,7 +28,7 @@ class EnrollmentAgreementDownloadTest extends TestCase
 
         config([
             'enrollment.agreement.path' => $this->agreementPath,
-            'enrollment.agreement.submission_email' => 'agreements@example.com',
+            'enrollment.agreement.default_submission_email' => 'agreements@example.com',
             'enrollment.agreement.download_filename' => 'DMF-Enrollment-Agreement.pdf',
         ]);
     }
@@ -104,6 +107,36 @@ class EnrollmentAgreementDownloadTest extends TestCase
         $response->assertStatus(503);
     }
 
+    public function test_download_streams_agreement_from_admin_storage_disk(): void
+    {
+        Storage::fake('dmf_s3');
+
+        config([
+            'enrollment.agreement.disk' => 'dmf_s3',
+            'enrollment.agreement.storage_directory' => 'enrollment-agreements',
+        ]);
+
+        $admin = User::factory()->admin()->create();
+        $path = 'enrollment-agreements/stored-agreement.pdf';
+        Storage::disk('dmf_s3')->put($path, '%PDF-1.4 stored agreement');
+
+        app(EnrollmentAgreementSettingService::class)->update([
+            'file_path' => $path,
+            'download_filename' => 'DMF-Stored-Agreement',
+            'submission_email' => 'stored@example.com',
+        ], $admin);
+
+        $enrollment = $this->createEnrollment();
+
+        $response = $this->get(route('enroll.agreement.download', [
+            'reference_number' => $enrollment->reference_number,
+        ]));
+
+        $response->assertOk();
+        $response->assertHeader('content-disposition', 'attachment; filename=DMF-Stored-Agreement.pdf');
+        $response->assertHeader('content-type', 'application/pdf');
+    }
+
     public function test_success_page_shows_agreement_download_and_submission_instructions(): void
     {
         $enrollment = $this->createEnrollment();
@@ -118,6 +151,7 @@ class EnrollmentAgreementDownloadTest extends TestCase
         $response->assertSee('agreements@example.com');
         $response->assertSee($enrollment->reference_number);
         $response->assertSee('Download the enrollment agreement using the button below.');
+        $response->assertSee('Sign the form (print and scan, or sign digitally)');
         $response->assertSee(route('enroll.agreement.download', [
             'reference_number' => $enrollment->reference_number,
         ]), false);
