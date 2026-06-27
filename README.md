@@ -1,66 +1,166 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# DMF Dental Training Center
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Enrollment and admin platform for **DMF Dental Training Center** — public student enrollment, Paymongo payments, bank transfer verification, and a Filament admin panel for staff.
 
-## About Laravel
+| Surface | URL |
+|---------|-----|
+| Public enrollment | `/enroll` |
+| Admin panel | `/admin` |
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Tech stack
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+| Layer | Technology |
+|-------|------------|
+| Backend | Laravel 11, PHP 8.4 |
+| Admin UI | Filament v3 (Livewire) |
+| Frontend | Blade, Tailwind CSS, Vite |
+| Payments | Paymongo (card / checkout) |
+| Storage | Local + S3-compatible (`dmf_s3` on Laravel Cloud) |
+| Database | PostgreSQL or MySQL |
+| Tests | PHPUnit |
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Features
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+### Public (students)
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- Program and package enrollment with schedule selection
+- Early-bird and full-price tuition logic
+- Paymongo checkout (card / online)
+- Bank transfer proof upload
+- Enrollment success page with agreement download and submission instructions
 
-## Laravel Sponsors
+### Admin (staff)
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+- **Operations overview** — awaiting payment, pending verification, balance due
+- **Enrollments** — search, filters, CSV export, payment verification
+- **Catalog** — categories, programs, packages, schedules
+- **Assistants** — role-based permissions (admin only)
+- **Payment channels** — BDO, BPI, ChinaBank, Palawan Express account details and QR uploads (admin only)
+- **Enrollment agreement** — upload/replace agreement file, set download name and submission email (admin only)
 
-### Premium Partners
+---
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+## Local development
 
-## Contributing
+### Requirements
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+- PHP 8.2+
+- Composer 2.x
+- Node.js 20+
+- PostgreSQL or MySQL
 
-## Code of Conduct
+### Setup
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+git clone <repo-url> dmf-dental
+cd dmf-dental
 
-## Security Vulnerabilities
+composer install
+cp .env.example .env
+php artisan key:generate
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+# Configure DB_* in .env, then:
+php artisan migrate
+php artisan db:seed   # if seeders are used in your environment
+
+npm install
+npm run dev           # or: npm run build
+
+php artisan serve     # or use Laravel Herd / Valet
+```
+
+Admin login is created via seeder or `ADMIN_INITIAL_PASSWORD` on first deploy — see [deployment guide](docs/deployment-guide.md).
+
+### Useful commands
+
+```bash
+composer run dev              # app + queue + vite (if configured)
+php artisan test --compact    # run tests
+vendor/bin/pint --dirty       # format changed PHP files
+php artisan manual-payment:sync-assets   # sync legacy QR assets to dmf_s3
+```
+
+---
+
+## Object storage (`dmf_s3`)
+
+Manual payment QR codes and enrollment agreement files use the **`dmf_s3`** disk, aligned with [Laravel Cloud](https://cloud.laravel.com/) object storage.
+
+**Local / staging** — set in `.env`:
+
+```env
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_DEFAULT_REGION=auto
+AWS_BUCKET=
+AWS_ENDPOINT=
+```
+
+**Production (Laravel Cloud)** — credentials are injected via `LARAVEL_CLOUD_DISK_CONFIG`; no manual S3 env vars needed on Cloud.
+
+Signed URLs for private QR previews are enabled by default (`MANUAL_PAYMENT_USE_SIGNED_URLS=true`).
+
+---
+
+## Enrollment agreement
+
+Admins manage the agreement under **Administration → Enrollment agreement**:
+
+- Upload PDF or Word (max 10 MB) to `dmf_s3`
+- Replacing a file deletes the previous one from storage
+- **Download name** — base name only; extension (`.pdf`, `.docx`, etc.) follows the uploaded file
+- **Submission email** — shown on the student success page; students email their signed copy from their own inbox (the app does not send email)
+
+Until an admin upload exists, downloads fall back to the legacy file at `storage/app/enrollment-agreements/`.
+
+---
+
+## Documentation
+
+| Document | Audience |
+|----------|----------|
+| [Admin user guide](docs/client-admin-guide.md) | DMF staff (administrators & assistants) |
+| [Deployment guide](docs/deployment-guide.md) | Developers / DevOps |
+
+---
+
+## Testing
+
+```bash
+# All tests
+php artisan test --compact
+
+# Examples
+php artisan test --compact tests/Feature/Filament/ManualPaymentChannelTest.php
+php artisan test --compact tests/Feature/Filament/ManageEnrollmentAgreementTest.php
+php artisan test --compact tests/Feature/EnrollmentAgreementDownloadTest.php
+```
+
+---
+
+## Project structure (high level)
+
+```
+app/
+  Filament/          # Admin panel (resources, pages)
+  Http/Controllers/  # Public enrollment & webhooks
+  Services/          # Business logic (payments, enrollment, agreements)
+config/
+  enrollment.php     # Agreement defaults
+  manual-payment.php # Payment channel storage
+database/migrations/
+resources/views/
+  enrollment/        # Public enrollment flow
+docs/                # Staff & deployment guides
+tests/
+```
+
+---
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Proprietary — DMF Dental Training Center. All rights reserved unless otherwise agreed with the project owner.
