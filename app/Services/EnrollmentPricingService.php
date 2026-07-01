@@ -33,6 +33,20 @@ final class EnrollmentPricingService
     public const CONVENIENCE_FEE_PESOS = 50;
 
     /**
+     * PayMongo processing fee for the given payment method.
+     *
+     * - card: 3.125% of base amount (rounded up) + ₱13 flat
+     * - bank_transfer: ₱0
+     */
+    public static function convenienceFeeForPaymentMethod(string $paymentMethod, int $baseAmountPesos): int
+    {
+        return match ($paymentMethod) {
+            'card' => (int) ceil($baseAmountPesos * 0.03125) + 13,
+            default => 0,
+        };
+    }
+
+    /**
      * Full course tuition that applies **right now** for balance settlement (DP enrollments only).
      */
     public static function applicableTuitionTotal(Enrollment $enrollment): int
