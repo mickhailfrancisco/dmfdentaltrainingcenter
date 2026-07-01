@@ -10,6 +10,7 @@ use App\Models\Program;
 use App\Services\BankTransferService;
 use App\Services\EnrollmentAgreementSettingService;
 use App\Services\EnrollmentFinancialService;
+use App\Services\EnrollmentPricingService;
 use App\Services\EnrollmentService;
 use App\Services\EnrollmentSuccessService;
 use App\Services\PaymongoService;
@@ -98,14 +99,17 @@ class EnrollmentController extends Controller
         $enrollment->payment_type = $oldData['payment_type'] ?? 'full';
 
         $enrollment->base_amount = ($enrollment->payment_type === 'full') ? $purchasable->active_price : $purchasable->downpayment_amount;
-        $enrollment->convenience_fee = 50;
-        $enrollment->total_amount = $enrollment->base_amount + $enrollment->convenience_fee;
+        $cardFee = EnrollmentPricingService::convenienceFeeForPaymentMethod('card', (int) $enrollment->base_amount);
+        $enrollment->convenience_fee = $cardFee;
+        $enrollment->total_amount = $enrollment->base_amount + $cardFee;
 
         return view('enrollment.payment', [
             'enrollment' => $enrollment,
             'purchasable' => $purchasable,
             'schedule' => $schedule,
             'includedPrograms' => $purchasable instanceof Package ? $purchasable->programs : collect(),
+            'cardFee' => $cardFee,
+            'bankTransferFee' => EnrollmentPricingService::convenienceFeeForPaymentMethod('bank_transfer', (int) $enrollment->base_amount),
         ]);
     }
 

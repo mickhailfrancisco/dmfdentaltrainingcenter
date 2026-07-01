@@ -86,7 +86,8 @@ final class EnrollmentBalanceService
             throw new BalanceAlreadySettledException($enrollment->reference_number);
         }
 
-        $fee = EnrollmentPricingService::CONVENIENCE_FEE_PESOS;
+        $cardFee = EnrollmentPricingService::convenienceFeeForPaymentMethod('card', $balance);
+        $bankTransferFee = EnrollmentPricingService::convenienceFeeForPaymentMethod('bank_transfer', $balance);
 
         $payUrl = URL::temporarySignedRoute(
             'enroll.balance.pay',
@@ -98,8 +99,10 @@ final class EnrollmentBalanceService
             'enrollment' => $enrollment,
             'purchasable_name' => (string) ($enrollment->purchasable_name_snapshot ?? '—'),
             'balance_tuition' => $balance,
-            'convenience_fee' => $fee,
-            'total_due' => $balance + $fee,
+            'card_fee' => $cardFee,
+            'bank_transfer_fee' => $bankTransferFee,
+            'convenience_fee' => $cardFee,
+            'total_due' => $balance + $cardFee,
             'pay_url' => $payUrl,
         ];
     }
