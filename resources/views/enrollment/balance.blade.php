@@ -21,7 +21,16 @@
         </div>
     @endif
 
-    <form action="{{ $pay_url }}" method="POST" class="flex flex-col lg:flex-row gap-6 items-start">
+    <form action="{{ $pay_url }}" method="POST" class="flex flex-col lg:flex-row gap-6 items-start"
+          x-data="{
+              method: 'card',
+              cardFee: {{ $card_fee }},
+              bankTransferFee: {{ $bank_transfer_fee }},
+              baseAmount: {{ $balance_tuition }},
+              get fee() { return this.method === 'card' ? this.cardFee : this.bankTransferFee; },
+              get total() { return this.baseAmount + this.fee; },
+              formatPeso(n) { return n.toLocaleString('en-PH'); }
+          }">
         @csrf
 
         <div class="flex-1 space-y-6">
@@ -58,7 +67,7 @@
                     </div>
 
                     <label class="pay-opt block rounded-xl border-2 border-emerald-100 p-3.5 bg-white" for="bal-pay-card">
-                        <input type="radio" id="bal-pay-card" name="payment_method" value="card" class="sr-only" checked>
+                        <input type="radio" id="bal-pay-card" name="payment_method" value="card" class="sr-only" x-model="method" checked>
                         <div class="flex items-center gap-3">
                             <span class="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center bg-emerald-50">
                                 <svg class="w-6 h-6 text-emerald-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
@@ -76,7 +85,7 @@
                     <p class="text-sm font-bold text-gray-800 mb-3">Bank Transfer</p>
 
                     <label class="pay-opt block rounded-xl border-2 border-slate-200 p-3.5 bg-white" for="bal-pay-bank-transfer">
-                        <input type="radio" id="bal-pay-bank-transfer" name="payment_method" value="bank_transfer" class="sr-only">
+                        <input type="radio" id="bal-pay-bank-transfer" name="payment_method" value="bank_transfer" class="sr-only" x-model="method">
                         <div class="flex items-center gap-3">
                             <span class="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center bg-slate-100">
                                 <svg class="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M4 11h16M5 21h14a2 2 0 002-2v-8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
@@ -104,11 +113,11 @@
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-500">Payment processing fee</span>
-                        <span class="font-semibold text-gray-800">₱{{ number_format($convenience_fee) }}</span>
+                        <span class="font-semibold text-gray-800" x-text="'₱' + formatPeso(fee)">₱{{ number_format($convenience_fee) }}</span>
                     </div>
                     <div class="border-t border-gray-100 pt-3 flex justify-between items-center">
                         <span class="font-bold text-gray-800">Total</span>
-                        <span class="font-extrabold text-brand-700 text-2xl">₱{{ number_format($total_due) }}</span>
+                        <span class="font-extrabold text-brand-700 text-2xl" x-text="'₱' + formatPeso(total)">₱{{ number_format($total_due) }}</span>
                     </div>
                 </div>
                 <button type="submit" class="flex items-center justify-center gap-2 w-full px-5 py-3.5 bg-accent-500 text-white font-extrabold rounded-xl shadow-md hover:bg-accent-400 hover:text-white transition-all text-base">

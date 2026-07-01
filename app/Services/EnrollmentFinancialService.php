@@ -46,6 +46,8 @@ final class EnrollmentFinancialService
      */
     private function sumPaidTuitionForEnrollment(int $enrollmentId): int
     {
+        // Legacy fallback: old payments (tuition_amount = 0) were all charged ₱50 flat.
+        // New payments always have tuition_amount set; this expression is only a backstop.
         $convenienceFee = EnrollmentPricingService::CONVENIENCE_FEE_PESOS;
 
         $driver = DB::connection()->getDriverName();
