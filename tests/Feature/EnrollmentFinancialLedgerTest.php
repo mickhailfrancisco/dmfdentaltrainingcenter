@@ -8,7 +8,6 @@ use App\Models\BankTransferSubmission;
 use App\Models\Payment;
 use App\Models\Program;
 use App\Services\EnrollmentFinancialService;
-use App\Services\EnrollmentPricingService;
 use App\Services\EnrollmentService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\URL;
@@ -76,7 +75,7 @@ class EnrollmentFinancialLedgerTest extends TestCase
             'enrollment_id' => $enrollment->id,
             'purpose' => Payment::PURPOSE_INITIAL,
             'payment_method' => 'card',
-            'amount' => (5_000 + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
+            'amount' => (5_000) * 100,
             'currency' => 'PHP',
             'tuition_amount' => 5_000,
             'status' => 'paid',
@@ -107,7 +106,7 @@ class EnrollmentFinancialLedgerTest extends TestCase
             'enrollment_id' => $enrollment->id,
             'purpose' => Payment::PURPOSE_INITIAL,
             'payment_method' => 'card',
-            'amount' => (5_000 + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
+            'amount' => (5_000) * 100,
             'currency' => 'PHP',
             'tuition_amount' => 5_000,
             'status' => 'paid',
@@ -122,34 +121,6 @@ class EnrollmentFinancialLedgerTest extends TestCase
 
         $this->assertSame(5_000, $enrollment->amount_paid_tuition);
         $this->assertSame('partially_paid', $enrollment->status->value);
-
-        Carbon::setTestNow();
-    }
-
-    public function test_recalculate_infers_tuition_from_charged_amount_when_tuition_amount_is_zero(): void
-    {
-        Carbon::setTestNow(Carbon::parse('2026-06-01', 'Asia/Manila')->startOfDay());
-
-        $program = $this->createProgram();
-        $enrollment = app(EnrollmentService::class)->createEnrollment($this->baseEnrollmentPayload($program));
-
-        Payment::query()->create([
-            'enrollment_id' => $enrollment->id,
-            'purpose' => Payment::PURPOSE_INITIAL,
-            'payment_method' => 'card',
-            'amount' => (5_000 + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
-            'currency' => 'PHP',
-            'tuition_amount' => 0,
-            'status' => 'paid',
-            'paid_at' => now(),
-        ]);
-
-        app(EnrollmentFinancialService::class)->recalculateEnrollmentFinancials($enrollment->fresh());
-        $enrollment->refresh();
-
-        $this->assertSame(5_000, $enrollment->amount_paid_tuition);
-        $this->assertSame('partially_paid', $enrollment->status->value);
-        $this->assertSame(3_000, $enrollment->balance_tuition_due);
 
         Carbon::setTestNow();
     }
@@ -171,7 +142,7 @@ class EnrollmentFinancialLedgerTest extends TestCase
             'enrollment_id' => $enrollment->id,
             'purpose' => Payment::PURPOSE_INITIAL,
             'payment_method' => 'card',
-            'amount' => ($enrollment->base_amount + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
+            'amount' => ($enrollment->base_amount) * 100,
             'currency' => 'PHP',
             'tuition_amount' => $enrollment->base_amount,
             'status' => 'paid',
@@ -248,7 +219,7 @@ class EnrollmentFinancialLedgerTest extends TestCase
             'enrollment_id' => $enrollment->id,
             'purpose' => Payment::PURPOSE_INITIAL,
             'payment_method' => 'card',
-            'amount' => (5_000 + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
+            'amount' => (5_000) * 100,
             'currency' => 'PHP',
             'tuition_amount' => 5_000,
             'status' => 'paid',
@@ -260,7 +231,7 @@ class EnrollmentFinancialLedgerTest extends TestCase
             'enrollment_id' => $enrollment->id,
             'purpose' => Payment::PURPOSE_BALANCE,
             'payment_method' => 'card',
-            'amount' => (3_000 + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
+            'amount' => (3_000) * 100,
             'currency' => 'PHP',
             'tuition_amount' => 3_000,
             'status' => 'paid',
@@ -326,7 +297,7 @@ class EnrollmentFinancialLedgerTest extends TestCase
             'enrollment_id' => $enrollment->id,
             'purpose' => Payment::PURPOSE_INITIAL,
             'payment_method' => 'card',
-            'amount' => (5_000 + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
+            'amount' => (5_000) * 100,
             'currency' => 'PHP',
             'tuition_amount' => 5_000,
             'status' => 'paid',
@@ -361,7 +332,7 @@ class EnrollmentFinancialLedgerTest extends TestCase
             'enrollment_id' => $enrollment->id,
             'purpose' => Payment::PURPOSE_INITIAL,
             'payment_method' => 'card',
-            'amount' => (21_500 + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
+            'amount' => (21_500) * 100,
             'currency' => 'PHP',
             'tuition_amount' => 21_500,
             'status' => 'paid',
@@ -372,7 +343,7 @@ class EnrollmentFinancialLedgerTest extends TestCase
             'enrollment_id' => $enrollment->id,
             'purpose' => Payment::PURPOSE_BALANCE,
             'payment_method' => 'card',
-            'amount' => (19_500 + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
+            'amount' => (19_500) * 100,
             'currency' => 'PHP',
             'tuition_amount' => 19_500,
             'status' => 'paid',
@@ -409,7 +380,7 @@ class EnrollmentFinancialLedgerTest extends TestCase
             'enrollment_id' => $enrollment->id,
             'purpose' => Payment::PURPOSE_INITIAL,
             'payment_method' => 'bank_transfer',
-            'amount' => (5_000 + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
+            'amount' => (5_000) * 100,
             'currency' => 'PHP',
             'tuition_amount' => 5_000,
             'status' => 'paid',
@@ -427,7 +398,7 @@ class EnrollmentFinancialLedgerTest extends TestCase
             'enrollment_id' => $enrollment->id,
             'purpose' => Payment::PURPOSE_BALANCE,
             'payment_method' => 'bank_transfer',
-            'amount' => (3_000 + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
+            'amount' => (3_000) * 100,
             'currency' => 'PHP',
             'tuition_amount' => 3_000,
             'status' => 'paid',

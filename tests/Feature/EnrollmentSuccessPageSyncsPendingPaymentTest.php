@@ -6,7 +6,6 @@ namespace Tests\Feature;
 
 use App\Models\Payment;
 use App\Models\Program;
-use App\Services\EnrollmentPricingService;
 use App\Services\EnrollmentService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
@@ -68,7 +67,7 @@ class EnrollmentSuccessPageSyncsPendingPaymentTest extends TestCase
             'enrollment_id' => $enrollment->id,
             'purpose' => Payment::PURPOSE_INITIAL,
             'payment_method' => 'card',
-            'amount' => (15_000 + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
+            'amount' => (15_000) * 100,
             'currency' => 'PHP',
             'tuition_amount' => 15_000,
             'status' => 'pending',
@@ -156,7 +155,7 @@ class EnrollmentSuccessPageSyncsPendingPaymentTest extends TestCase
             'enrollment_id' => $enrollment->id,
             'purpose' => Payment::PURPOSE_INITIAL,
             'payment_method' => 'card',
-            'amount' => (15_000 + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
+            'amount' => (15_000) * 100,
             'currency' => 'PHP',
             'tuition_amount' => 15_000,
             'status' => 'pending',
@@ -241,7 +240,7 @@ class EnrollmentSuccessPageSyncsPendingPaymentTest extends TestCase
             'enrollment_id' => $enrollment->id,
             'purpose' => Payment::PURPOSE_INITIAL,
             'payment_method' => 'bank_transfer',
-            'amount' => (15_000 + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
+            'amount' => (15_000) * 100,
             'currency' => 'PHP',
             'tuition_amount' => 15_000,
             'status' => 'submitted',

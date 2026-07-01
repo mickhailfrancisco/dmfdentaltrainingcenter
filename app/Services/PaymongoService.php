@@ -26,7 +26,6 @@ class PaymongoService
     public function createCheckoutSession(Enrollment $enrollment, string $purpose = Payment::PURPOSE_INITIAL): array
     {
         $purchasableName = (string) ($enrollment->purchasable_name_snapshot ?? 'Enrollment');
-        $fee = EnrollmentPricingService::CONVENIENCE_FEE_PESOS;
 
         if ($purpose === Payment::PURPOSE_BALANCE) {
             if ($enrollment->payment_type !== 'downpayment') {
@@ -41,10 +40,12 @@ class PaymongoService
                 throw new RuntimeException('No remaining tuition balance.');
             }
 
+            $fee = EnrollmentPricingService::convenienceFeeForPaymentMethod('card', $tuitionPortion);
             $totalPesos = $tuitionPortion + $fee;
             $lineSuffix = 'Balance';
         } else {
             $tuitionPortion = (int) $enrollment->base_amount;
+            $fee = EnrollmentPricingService::convenienceFeeForPaymentMethod('card', $tuitionPortion);
             $totalPesos = $tuitionPortion + $fee;
             $lineSuffix = $enrollment->payment_type === 'downpayment' ? 'Downpayment' : 'Full Payment';
         }
@@ -127,6 +128,11 @@ class PaymongoService
                 'paymongo_checkout_session_id' => $responseData['id'] ?? null,
                 'status' => 'pending',
                 'paymongo_payload' => $response->json(),
+            ]);
+
+            $enrollment->update([
+                'convenience_fee' => $fee,
+                'total_amount' => $tuitionPortion + $fee,
             ]);
 
             return [
@@ -344,6 +350,8 @@ class PaymongoService
             $payment->update([
                 'paymongo_payload' => $payload,
             ]);
+
+            $this->enrollmentFinancialService->recalculateEnrollmentFinancials($payment->enrollment->fresh());
 
             return [
                 'status' => 200,

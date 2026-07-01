@@ -6,7 +6,6 @@ namespace Tests\Feature;
 
 use App\Models\Payment;
 use App\Models\Program;
-use App\Services\EnrollmentPricingService;
 use App\Services\EnrollmentService;
 use Carbon\Carbon;
 use Tests\TestCase;
@@ -64,7 +63,7 @@ class SuccessPageHidesBalanceCtaWhenBankTransferSubmittedTest extends TestCase
             'enrollment_id' => $enrollment->id,
             'purpose' => Payment::PURPOSE_INITIAL,
             'payment_method' => 'card',
-            'amount' => (15_000 + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
+            'amount' => (15_000) * 100,
             'currency' => 'PHP',
             'tuition_amount' => 15_000,
             'status' => 'paid',
@@ -76,7 +75,7 @@ class SuccessPageHidesBalanceCtaWhenBankTransferSubmittedTest extends TestCase
             'enrollment_id' => $enrollment->id,
             'purpose' => Payment::PURPOSE_BALANCE,
             'payment_method' => 'bank_transfer',
-            'amount' => (9_000 + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
+            'amount' => (9_000) * 100,
             'currency' => 'PHP',
             'tuition_amount' => 9_000,
             'status' => 'submitted',
@@ -141,7 +140,7 @@ class SuccessPageHidesBalanceCtaWhenBankTransferSubmittedTest extends TestCase
             'enrollment_id' => $enrollment->id,
             'purpose' => Payment::PURPOSE_INITIAL,
             'payment_method' => 'bank_transfer',
-            'amount' => (12_500 + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
+            'amount' => (12_500) * 100,
             'currency' => 'PHP',
             'tuition_amount' => 12_500,
             'status' => 'submitted',

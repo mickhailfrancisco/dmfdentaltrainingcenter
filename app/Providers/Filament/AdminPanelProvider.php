@@ -32,6 +32,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login(CustomLogin::class)
+            ->profile(isSimple: false)
             ->brandName('DMF Dental Training Center')
             ->brandLogo(fn () => view('filament.brand'))
             ->brandLogoHeight('auto')

@@ -46,29 +46,10 @@ final class EnrollmentFinancialService
      */
     private function sumPaidTuitionForEnrollment(int $enrollmentId): int
     {
-        $convenienceFee = EnrollmentPricingService::CONVENIENCE_FEE_PESOS;
-
-        $driver = DB::connection()->getDriverName();
-
-        $tuitionExpression = self::tuitionSumExpressionForDriver($driver);
-
         return (int) Payment::query()
             ->where('enrollment_id', $enrollmentId)
             ->where('status', 'paid')
-            ->selectRaw("COALESCE(SUM({$tuitionExpression}), 0) as tuition_total", [$convenienceFee])
-            ->value('tuition_total');
-    }
-
-    /**
-     * SQL expression for summing tuition credited from a paid payment row.
-     */
-    public static function tuitionSumExpressionForDriver(string $driver): string
-    {
-        return match ($driver) {
-            'pgsql' => 'CASE WHEN tuition_amount > 0 THEN tuition_amount ELSE GREATEST(0, (ROUND(amount / 100.0)::integer - ?)) END',
-            'mysql' => 'CASE WHEN tuition_amount > 0 THEN tuition_amount ELSE GREATEST(0, CAST(ROUND(amount / 100.0) AS SIGNED) - ?) END',
-            default => 'CASE WHEN tuition_amount > 0 THEN tuition_amount ELSE MAX(0, CAST(ROUND(amount / 100.0) AS INTEGER) - ?) END',
-        };
+            ->sum('tuition_amount');
     }
 
     private function resolveStatusFromLedger(Enrollment $enrollment): EnrollmentStatus
