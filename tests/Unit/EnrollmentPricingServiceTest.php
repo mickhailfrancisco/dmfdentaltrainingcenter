@@ -144,8 +144,8 @@ class EnrollmentPricingServiceTest extends TestCase
             'taker_status' => 'First taker',
             'payment_type' => 'downpayment',
             'base_amount' => 21_500,
-            'convenience_fee' => 50,
-            'total_amount' => 21_550,
+            'convenience_fee' => 0,
+            'total_amount' => 21_500,
             'purchasable_name_snapshot' => $program->name,
             'purchasable_slug_snapshot' => $program->slug,
             'tuition_list_amount' => 43_000,
@@ -159,7 +159,7 @@ class EnrollmentPricingServiceTest extends TestCase
             'enrollment_id' => $enrollment->getKey(),
             'purpose' => Payment::PURPOSE_INITIAL,
             'payment_method' => 'card',
-            'amount' => (21_500 + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
+            'amount' => (21_500) * 100,
             'currency' => 'PHP',
             'tuition_amount' => 21_500,
             'status' => 'paid',
@@ -170,7 +170,7 @@ class EnrollmentPricingServiceTest extends TestCase
             'enrollment_id' => $enrollment->getKey(),
             'purpose' => Payment::PURPOSE_BALANCE,
             'payment_method' => 'card',
-            'amount' => (19_500 + EnrollmentPricingService::CONVENIENCE_FEE_PESOS) * 100,
+            'amount' => (19_500) * 100,
             'currency' => 'PHP',
             'tuition_amount' => 19_500,
             'status' => 'paid',
@@ -183,5 +183,33 @@ class EnrollmentPricingServiceTest extends TestCase
         $this->assertSame(41_000, EnrollmentPricingService::applicableTuitionTotal($enrollment));
 
         Carbon::setTestNow();
+    }
+
+    public function test_card_fee_is_3125_percent_plus_13(): void
+    {
+        // 10_000 * 0.03125 = 312.5 → ceil = 313, + 13 = 326
+        $this->assertSame(326, EnrollmentPricingService::convenienceFeeForPaymentMethod('card', 10_000));
+    }
+
+    public function test_card_fee_rounds_up_fractional_cents(): void
+    {
+        // 1_000 * 0.03125 = 31.25 → ceil = 32, + 13 = 45
+        $this->assertSame(45, EnrollmentPricingService::convenienceFeeForPaymentMethod('card', 1_000));
+    }
+
+    public function test_card_fee_on_exact_amount(): void
+    {
+        // 16_000 * 0.03125 = 500.0 → ceil = 500, + 13 = 513
+        $this->assertSame(513, EnrollmentPricingService::convenienceFeeForPaymentMethod('card', 16_000));
+    }
+
+    public function test_bank_transfer_fee_is_zero(): void
+    {
+        $this->assertSame(0, EnrollmentPricingService::convenienceFeeForPaymentMethod('bank_transfer', 10_000));
+    }
+
+    public function test_unknown_payment_method_fee_is_zero(): void
+    {
+        $this->assertSame(0, EnrollmentPricingService::convenienceFeeForPaymentMethod('gcash', 10_000));
     }
 }

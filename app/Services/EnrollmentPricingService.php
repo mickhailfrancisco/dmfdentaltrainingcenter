@@ -13,7 +13,7 @@ use Illuminate\Support\Collection;
  * Enrollment tuition pricing and balance rules (snapshot + early-bird cutoff).
  *
  * Policy (locked for this implementation):
- * - Convenience fee: **₱50 per PayMongo checkout** (initial full/DP and balance checkout).
+ * - Convenience fee: **card** = 3.125% of base amount (rounded up) + ₱13 flat; **bank transfer** = ₱0.
  * - Downpayment amount: **50% of list price** (`tuition_list_amount * 0.5`) at enrollment time.
  * - Full payment at enrollment: **active price** (`price_early` while early bird is active, else `price_full`).
  * - Remaining balance after DP: `applicable_tuition_total - amount_paid_tuition`.
@@ -30,7 +30,19 @@ use Illuminate\Support\Collection;
  */
 final class EnrollmentPricingService
 {
-    public const CONVENIENCE_FEE_PESOS = 50;
+    /**
+     * PayMongo processing fee for the given payment method.
+     *
+     * - card: 3.125% of base amount (rounded up) + ₱13 flat
+     * - bank_transfer: ₱0
+     */
+    public static function convenienceFeeForPaymentMethod(string $paymentMethod, int $baseAmountPesos): int
+    {
+        return match ($paymentMethod) {
+            'card' => (int) ceil($baseAmountPesos * 0.03125) + 13,
+            default => 0,
+        };
+    }
 
     /**
      * Full course tuition that applies **right now** for balance settlement (DP enrollments only).
@@ -160,12 +172,6 @@ final class EnrollmentPricingService
 
     private static function tuitionCreditedFromPayment(Payment $payment): int
     {
-        $tuitionAmount = (int) $payment->tuition_amount;
-
-        if ($tuitionAmount > 0) {
-            return $tuitionAmount;
-        }
-
-        return max(0, (int) round(((int) $payment->amount) / 100) - self::CONVENIENCE_FEE_PESOS);
+        return (int) $payment->tuition_amount;
     }
 }

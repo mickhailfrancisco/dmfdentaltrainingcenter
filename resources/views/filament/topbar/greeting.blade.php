@@ -324,51 +324,5 @@
             <p class="dmf-topbar-greeting__clock" x-text="timeLabel">{{ $initialTimeLabel }}</p>
         </div>
 
-        @if ($simEnabled)
-            <div class="dmf-topbar-greeting__sim">
-                <button
-                    type="button"
-                    class="dmf-topbar-greeting__sim-toggle"
-                    x-on:click="simOpen = ! simOpen"
-                    x-bind:class="{ 'is-active': isSimulating() }"
-                    title="Simulate time of day (dev only)"
-                >
-                    SIM
-                </button>
-
-                <div
-                    class="dmf-topbar-greeting__sim-panel"
-                    x-show="simOpen"
-                    x-cloak
-                    x-on:click.outside="simOpen = false"
-                >
-                    <p class="dmf-topbar-greeting__sim-title">Time preview (dev only)</p>
-
-                    <div class="dmf-topbar-greeting__sim-actions">
-                        <button type="button" class="dmf-topbar-greeting__sim-btn" x-on:click="startCycle()">
-                            ▶ Play day
-                        </button>
-                        <button type="button" class="dmf-topbar-greeting__sim-btn" x-on:click="useLive()">
-                            Live clock
-                        </button>
-                    </div>
-
-                    <div class="dmf-topbar-greeting__sim-presets">
-                        <template x-for="preset in Object.values(presets)" x-bind:key="preset.label">
-                            <button
-                                type="button"
-                                class="dmf-topbar-greeting__sim-preset"
-                                x-text="preset.label"
-                                x-on:click="setPreset(preset.minutes)"
-                            ></button>
-                        </template>
-                    </div>
-
-                    <p class="dmf-topbar-greeting__sim-hint">
-                        Or add <code>?sky_sim=cycle</code> or <code>?sky_sim=18:15</code> to the URL.
-                    </p>
-                </div>
-            </div>
-        @endif
     </div>
 @endif
