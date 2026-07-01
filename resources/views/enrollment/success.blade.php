@@ -128,12 +128,6 @@
                         && $p->status === 'submitted');
 
                     $pendingInitialTuition = (int) ($pendingInitialBankTransferPayment?->tuition_amount ?? 0);
-                    if ($pendingInitialTuition <= 0 && $pendingInitialBankTransferPayment) {
-                        $pendingInitialTuition = max(
-                            0,
-                            (int) round(((int) ($pendingInitialBankTransferPayment->amount ?? 0)) / 100) - \App\Services\EnrollmentPricingService::CONVENIENCE_FEE_PESOS
-                        );
-                    }
 
                     $expectedRemainingAfterVerification = $pendingInitialTuition > 0
                         ? max(0, ($applicableTuitionTotal ?? \App\Services\EnrollmentPricingService::applicableTuitionTotal($enrollment)) - $pendingInitialTuition)
