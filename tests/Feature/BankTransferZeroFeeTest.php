@@ -26,7 +26,7 @@ class BankTransferZeroFeeTest extends TestCase
             'convenience_fee' => 50,
             'total_amount' => 10_050,
             'tuition_list_amount' => 10_000,
-            'reference_number' => 'DMF-BTZERO-TEST01',
+            'reference_number' => 'DMF-BT-'.strtoupper(substr(uniqid(), -6)),
         ]);
 
         $service = app(BankTransferService::class);

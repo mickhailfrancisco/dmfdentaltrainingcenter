@@ -13,7 +13,7 @@ use Illuminate\Support\Collection;
  * Enrollment tuition pricing and balance rules (snapshot + early-bird cutoff).
  *
  * Policy (locked for this implementation):
- * - Convenience fee: **₱50 per PayMongo checkout** (initial full/DP and balance checkout).
+ * - Convenience fee: **card** = 3.125% of base amount (rounded up) + ₱13 flat; **bank transfer** = ₱0.
  * - Downpayment amount: **50% of list price** (`tuition_list_amount * 0.5`) at enrollment time.
  * - Full payment at enrollment: **active price** (`price_early` while early bird is active, else `price_full`).
  * - Remaining balance after DP: `applicable_tuition_total - amount_paid_tuition`.

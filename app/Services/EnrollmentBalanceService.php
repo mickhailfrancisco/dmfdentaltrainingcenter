@@ -47,6 +47,8 @@ final class EnrollmentBalanceService
      *     enrollment: Enrollment,
      *     purchasable_name: string,
      *     balance_tuition: int,
+     *     card_fee: int,
+     *     bank_transfer_fee: int,
      *     convenience_fee: int,
      *     total_due: int,
      *     pay_url: string,
