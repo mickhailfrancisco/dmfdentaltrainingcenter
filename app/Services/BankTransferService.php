@@ -226,8 +226,6 @@ class BankTransferService
 
     private function createOrUpdatePendingPayment(Enrollment $enrollment, string $purpose): Payment
     {
-        $fee = EnrollmentPricingService::CONVENIENCE_FEE_PESOS;
-
         if ($purpose === Payment::PURPOSE_BALANCE) {
             if ($enrollment->payment_type !== 'downpayment') {
                 throw new RuntimeException('Balance checkout is only available for downpayment enrollments.');
@@ -241,9 +239,10 @@ class BankTransferService
             $tuitionPortion = (int) $enrollment->base_amount;
         }
 
+        $fee = EnrollmentPricingService::convenienceFeeForPaymentMethod('bank_transfer', $tuitionPortion);
         $totalPesos = $tuitionPortion + $fee;
 
-        return Payment::updateOrCreate(
+        $payment = Payment::updateOrCreate(
             [
                 'enrollment_id' => $enrollment->getKey(),
                 'purpose' => $purpose,
@@ -259,5 +258,12 @@ class BankTransferService
                 'paymongo_payment_id' => null,
             ],
         );
+
+        $enrollment->update([
+            'convenience_fee' => $fee,
+            'total_amount' => $tuitionPortion + $fee,
+        ]);
+
+        return $payment;
     }
 }
