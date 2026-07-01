@@ -30,8 +30,6 @@ use Illuminate\Support\Collection;
  */
 final class EnrollmentPricingService
 {
-    public const CONVENIENCE_FEE_PESOS = 50;
-
     /**
      * PayMongo processing fee for the given payment method.
      *
@@ -174,12 +172,6 @@ final class EnrollmentPricingService
 
     private static function tuitionCreditedFromPayment(Payment $payment): int
     {
-        $tuitionAmount = (int) $payment->tuition_amount;
-
-        if ($tuitionAmount > 0) {
-            return $tuitionAmount;
-        }
-
-        return max(0, (int) round(((int) $payment->amount) / 100) - self::CONVENIENCE_FEE_PESOS);
+        return (int) $payment->tuition_amount;
     }
 }

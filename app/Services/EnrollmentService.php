@@ -59,7 +59,7 @@ class EnrollmentService
             ? (int) $purchasable->active_price
             : (int) $purchasable->downpayment_amount;
 
-        $convenienceFee = EnrollmentPricingService::CONVENIENCE_FEE_PESOS;
+        $convenienceFee = EnrollmentPricingService::convenienceFeeForPaymentMethod('card', $baseAmount);
         $totalAmount = $baseAmount + $convenienceFee;
 
         $list = (int) $purchasable->price_full;
