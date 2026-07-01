@@ -351,6 +351,8 @@ class PaymongoService
                 'paymongo_payload' => $payload,
             ]);
 
+            $this->enrollmentFinancialService->recalculateEnrollmentFinancials($payment->enrollment->fresh());
+
             return [
                 'status' => 200,
                 'body' => ['message' => 'Already processed.'],
