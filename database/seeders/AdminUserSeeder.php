@@ -21,20 +21,61 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->seedAdminAccount();
+        $this->seedDeveloperAccount();
+    }
+
+    /**
+     * Primary dentist administrator account.
+     * Set ADMIN_INITIAL_PASSWORD in the environment before seeding in production.
+     */
+    private function seedAdminAccount(): void
+    {
         $password = env('ADMIN_INITIAL_PASSWORD');
 
         if (app()->environment('production') && blank($password)) {
-            $this->command?->warn('Skipping AdminUserSeeder: set ADMIN_INITIAL_PASSWORD to seed admin in production.');
+            $this->command?->warn('Skipping primary admin: set ADMIN_INITIAL_PASSWORD to seed in production.');
 
             return;
         }
 
-        $password = (string) ($password ?: 'password');
+        $this->upsertAdmin(
+            email: 'admin@dmfdental.com',
+            name: 'DMF Dental Administrator',
+            password: (string) ($password ?: 'password'),
+        );
+    }
 
+    /**
+     * Developer account for log access in production.
+     * Set DEV_ADMIN_EMAIL and DEV_ADMIN_PASSWORD in the environment.
+     */
+    private function seedDeveloperAccount(): void
+    {
+        $email = env('DEV_ADMIN_EMAIL');
+        $password = env('DEV_ADMIN_PASSWORD');
+
+        if (blank($email) || blank($password)) {
+            if (app()->environment('production')) {
+                $this->command?->warn('Skipping developer admin: set DEV_ADMIN_EMAIL and DEV_ADMIN_PASSWORD to seed in production.');
+            }
+
+            return;
+        }
+
+        $this->upsertAdmin(
+            email: (string) $email,
+            name: 'Developer',
+            password: (string) $password,
+        );
+    }
+
+    private function upsertAdmin(string $email, string $name, string $password): void
+    {
         $user = User::firstOrCreate(
-            ['email' => 'admin@dmfdental.com'],
+            ['email' => $email],
             [
-                'name' => 'DMF Dental Administrator',
+                'name' => $name,
                 'password' => Hash::make($password),
                 'role' => UserRole::Admin->value,
             ]
