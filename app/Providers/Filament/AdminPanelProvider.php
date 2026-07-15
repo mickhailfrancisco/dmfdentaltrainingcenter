@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Pages\Auth\CustomLogin;
+use App\Filament\Resources\EnrollmentResource;
 use App\Filament\Resources\EnrollmentResource\Pages\ListEnrollments;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -15,7 +16,6 @@ use Filament\Support\Colors\Color;
 use Filament\Support\Enums\MaxWidth;
 use Filament\Tables\View\TablesRenderHook;
 use Filament\View\PanelsRenderHook;
-use Filament\Widgets;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -54,12 +54,9 @@ class AdminPanelProvider extends PanelProvider
             ->darkMode(false)
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
-            ->homeUrl('/admin/enrollment-overview')
+            ->homeUrl(fn (): string => EnrollmentResource::getUrl('index'))
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
-            ->widgets([
-                Widgets\AccountWidget::class,
-                // Removed FilamentInfoWidget — not needed for client-facing admin
-            ])
+            ->widgets([])
             ->renderHook(
                 PanelsRenderHook::SIDEBAR_NAV_END,
                 fn () => view('filament.sidebar.logout'),

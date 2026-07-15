@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Feature\Filament;
 
 use App\Enums\EnrollmentStatus;
-use App\Filament\Pages\EnrollmentOverview;
 use App\Filament\Resources\EnrollmentResource;
 use App\Filament\Resources\EnrollmentResource\Pages\ListEnrollments;
 use App\Filament\Resources\EnrollmentResource\Pages\ViewEnrollment;
@@ -162,23 +161,27 @@ class EnrollmentAdminUxTest extends TestCase
             ->assertSee('Export CSV');
     }
 
-    public function test_operations_overview_page_loads_with_stat_links(): void
+    public function test_admin_home_redirects_to_enrollments_list(): void
     {
         $admin = $this->makeAdmin();
 
-        $this->makeEnrollment([
-            'status' => EnrollmentStatus::PENDING->value,
-            'amount_paid_tuition' => 0,
-        ]);
+        $this->actingAs($admin)
+            ->get('/admin')
+            ->assertRedirect(EnrollmentResource::getUrl('index'));
 
-        $this->actingAs($admin);
+        $this->assertSame(
+            EnrollmentResource::getUrl('index'),
+            filament()->getHomeUrl(),
+        );
+    }
 
-        Livewire::test(EnrollmentOverview::class)
-            ->assertSuccessful()
-            ->assertSee('Awaiting payment')
-            ->assertSee('Pending verification')
-            ->assertSee('Balance due')
-            ->assertSee(EnrollmentResource::getUrl('index', ['activeTab' => 'awaiting_payment']));
+    public function test_operations_overview_route_is_removed(): void
+    {
+        $admin = $this->makeAdmin();
+
+        $this->actingAs($admin)
+            ->get('/admin/enrollment-overview')
+            ->assertNotFound();
     }
 
     public function test_pending_verification_tab_includes_submitted_bank_transfer(): void
@@ -250,7 +253,7 @@ class EnrollmentAdminUxTest extends TestCase
 
         $this->actingAs($admin);
 
-        $this->get(EnrollmentOverview::getUrl())
+        $this->get(EnrollmentResource::getUrl('index'))
             ->assertOk()
             ->assertSee('dmf-topbar-greeting', false)
             ->assertSee('dmf-topbar-greeting__sky-scene', false)
@@ -274,7 +277,7 @@ class EnrollmentAdminUxTest extends TestCase
 
         $this->actingAs($assistant);
 
-        $this->get(EnrollmentOverview::getUrl())
+        $this->get(EnrollmentResource::getUrl('index'))
             ->assertOk()
             ->assertSee('Good Evening, Jane', false)
             ->assertSee('dmf-topbar-greeting__celestial--sun', false);
@@ -290,7 +293,7 @@ class EnrollmentAdminUxTest extends TestCase
 
         $this->actingAs($admin);
 
-        $this->get(EnrollmentOverview::getUrl())
+        $this->get(EnrollmentResource::getUrl('index'))
             ->assertOk()
             ->assertSee('Good Evening, Doc', false)
             ->assertSee('dmf-topbar-greeting__celestial--moon', false);
@@ -304,14 +307,14 @@ class EnrollmentAdminUxTest extends TestCase
 
         $this->actingAs($admin);
 
-        $this->get(EnrollmentOverview::getUrl())
+        $this->get(EnrollmentResource::getUrl('index'))
             ->assertOk()
             ->assertSee('Sign out', false)
             ->assertSee('dmf-topbar-greeting', false)
             ->assertDontSee('fi-user-menu', false);
     }
 
-    public function test_topbar_time_simulator_is_available_in_debug_mode(): void
+    public function test_topbar_respects_sky_sim_query_in_debug_mode(): void
     {
         config(['app.debug' => true]);
 
@@ -321,31 +324,12 @@ class EnrollmentAdminUxTest extends TestCase
 
         $this->actingAs($admin);
 
-        $this->get(EnrollmentOverview::getUrl())
-            ->assertOk()
-            ->assertSee('dmf-topbar-greeting__sim-toggle', false)
-            ->assertSee('Play day', false);
-
-        $this->get(EnrollmentOverview::getUrl(['sky_sim' => '05:45']))
+        $this->get(EnrollmentResource::getUrl('index').'?sky_sim=05:45')
             ->assertOk()
             ->assertSee('Good Morning, Doc', false)
             ->assertSee('dmf-topbar-greeting__sky-scene', false);
 
         Carbon::setTestNow();
-    }
-
-    public function test_topbar_time_simulator_is_hidden_outside_debug_mode(): void
-    {
-        config(['app.debug' => false]);
-
-        $admin = $this->makeAdmin();
-
-        $this->actingAs($admin);
-
-        $this->get(EnrollmentOverview::getUrl())
-            ->assertOk()
-            ->assertDontSee('dmf-topbar-greeting__sim-toggle', false)
-            ->assertDontSee('Play day', false);
     }
 
     public function test_payments_tab_shows_all_columns_without_filters(): void

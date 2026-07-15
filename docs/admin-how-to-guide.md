@@ -14,7 +14,7 @@ This guide covers how to use the admin panel to manage students, payments, cours
 | **Administrator** | Sees and can use everything in the admin panel                 |
 | **Assistant**     | Only sees the parts the Administrator has switched on for them |
 
-Only an **Administrator** can create staff accounts and decide what each Assistant is allowed to see or do. This is done under **Administration → Assistants** (explained in section 10).
+Only an **Administrator** can create staff accounts and decide what each Assistant is allowed to see or do. This is done under **Administration → Assistants** (explained in section 9).
 
 If an Assistant logs in and can't see the students/enrollments list at all, it's because the Administrator hasn't turned that permission on for them yet.
 
@@ -24,7 +24,7 @@ If an Assistant logs in and can't see the students/enrollments list at all, it's
 
 1. Go to `https://dmfdentaltrainingcenter.com/admin`
 2. Type in your email and password, then log in
-3. You'll land on the **Overview** page (see section 3) — this is the home screen
+3. You'll land on the **Enrollments** list (see section 3) — this is the home screen
 
 **Email:** admin@dmfdental.com
 **Temporary Password:** admin12345
@@ -41,21 +41,7 @@ When you're done, click **Sign out** at the bottom of the left-hand menu.
 
 ---
 
-## 3. The Overview page (home screen)
-
-This is the first thing you see after logging in. It shows three boxes, each a running count of students who need something from you:
-
-| Box                      | What it means                                                                |
-| ------------------------ | ---------------------------------------------------------------------------- |
-| **Awaiting payment**     | The student enrolled but hasn't paid anything yet                            |
-| **Pending verification** | The student sent a bank transfer, and you still need to check and confirm it |
-| **Balance due**          | The student made a down payment; they still owe the rest of the tuition      |
-
-Click any box to jump straight to that list of students.
-
----
-
-## 4. Viewing and managing student enrollments
+## 3. Viewing and managing student enrollments
 
 **Where to find it:** click **Enrollments** in the left-hand menu
 
@@ -99,7 +85,7 @@ Click anywhere on a student's row to open their full enrollment details. Dependi
 
 ---
 
-## 5. Handling student payments
+## 4. Handling student payments
 
 Students can pay in two ways: **online by card** or by **bank transfer**. Here's what to do for each.
 
@@ -125,7 +111,7 @@ Once you verify it, the student's balance and status update automatically. The *
 
 ---
 
-## 6. Sending students a payment link
+## 5. Sending students a payment link
 
 If a student hasn't paid yet, or still owes a balance, you can send them a direct link to pay:
 
@@ -137,7 +123,7 @@ The link takes the student straight to their own payment page — they don't nee
 
 ---
 
-## 7. Managing courses, packages, and pricing
+## 6. Managing courses, packages, and pricing
 
 **Where to find it:** the **Catalog** section in the left-hand menu
 
@@ -162,7 +148,7 @@ This is where you control what students see when they visit the enrollment page 
 
 ---
 
-## 8. Payment channels — bank transfer details (Administrators only)
+## 7. Payment channels — bank transfer details (Administrators only)
 
 **Where to find it:** **Administration → Payment channels**
 
@@ -180,7 +166,7 @@ Before saving changes, click **Preview QR** on the list to double-check exactly 
 
 ---
 
-## 9. Enrollment agreement document (Administrators only)
+## 8. Enrollment agreement document (Administrators only)
 
 **Where to find it:** **Administration → Enrollment agreement**
 
@@ -193,7 +179,7 @@ This is the signed agreement/contract file that students are given to download a
 
 ---
 
-## 10. Setting up Assistant staff accounts (Administrators only)
+## 9. Setting up Assistant staff accounts (Administrators only)
 
 **Where to find it:** **Administration → Assistants**
 
@@ -223,13 +209,12 @@ Only check the boxes they actually need for their job. A few examples:
 
 ---
 
-## 11. Suggested daily routine
+## 10. Suggested daily routine
 
 **When you start your day:**
 
-- [ ] Check the **Overview** page for the day's counts
-- [ ] Go through **Pending verification** — confirm any bank transfers received
-- [ ] Go through **Awaiting payment** — follow up with students who haven't paid
+- [ ] Open **Enrollments** and check the **Pending verification** tab — confirm any bank transfers received
+- [ ] Check **Awaiting payment** — follow up with students who haven't paid
 
 **Throughout the day:**
 
@@ -248,7 +233,7 @@ Only check the boxes they actually need for their job. A few examples:
 
 ---
 
-## 12. Common problems and what to do
+## 11. Common problems and what to do
 
 | Problem                                                                        | What to try                                                                                                                                                                                  |
 | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -266,7 +251,7 @@ For anything technical — like the website being down, payments not going throu
 
 ---
 
-## 13. Information you should never share
+## 12. Information you should never share
 
 - Your password, or anyone else's
 - Payment processor account keys or credentials
@@ -275,6 +260,6 @@ For anything technical — like the website being down, payments not going throu
 
 ---
 
-## 14. Who to contact
+## 13. Who to contact
 
 For any issue, question, or something that doesn't look right — payments, student records, courses, pricing, or anything else in the admin panel — contact your developer.

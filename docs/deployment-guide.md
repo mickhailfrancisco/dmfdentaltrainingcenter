@@ -369,7 +369,7 @@ php artisan filament:optimize
 
 - [ ] Public site loads: `/` and `/enroll`
 - [ ] Admin login: `/admin`
-- [ ] Operations overview shows stat cards
+- [ ] Admin home opens Enrollments list
 - [ ] Create test program → visible on enroll form
 - [ ] Test Paymongo checkout (small amount or test mode on staging)
 - [ ] Bank transfer proof upload + verify flow
