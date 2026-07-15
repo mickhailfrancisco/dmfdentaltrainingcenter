@@ -80,7 +80,7 @@ final class PermissionCodes
     public const CATALOG_SCHEDULES_DELETE = 'catalog.schedules.delete';
 
     /**
-     * Permissions that allow viewing the enrollment list or operations overview.
+     * Permissions that allow viewing the enrollment list.
      *
      * @return list<string>
      */
