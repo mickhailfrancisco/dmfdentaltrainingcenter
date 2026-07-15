@@ -21,7 +21,16 @@
         </div>
     @endif
 
-    <form action="{{ $pay_url }}" method="POST" class="flex flex-col lg:flex-row gap-6 items-start">
+    <form action="{{ $pay_url }}" method="POST" class="flex flex-col lg:flex-row gap-6 items-start"
+          x-data="{
+              method: 'card',
+              cardFee: {{ $cardFee }},
+              bankTransferFee: {{ $bankTransferFee }},
+              baseAmount: {{ (int) $enrollment->base_amount }},
+              get fee() { return this.method === 'card' ? this.cardFee : this.bankTransferFee; },
+              get total() { return this.baseAmount + this.fee; },
+              formatPeso(n) { return n.toLocaleString('en-PH', { maximumFractionDigits: 0 }); }
+          }">
         @csrf
 
         <div class="flex-1 space-y-6">
@@ -58,7 +67,7 @@
                     </div>
 
                     <label class="pay-opt block rounded-xl border-2 border-emerald-100 p-3.5 bg-white" for="resume-pay-card">
-                        <input type="radio" id="resume-pay-card" name="payment_method" value="card" class="sr-only" checked>
+                        <input type="radio" id="resume-pay-card" name="payment_method" value="card" class="sr-only" x-model="method">
                         <div class="flex items-center gap-3">
                             <span class="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center bg-emerald-50">
                                 <svg class="w-6 h-6 text-emerald-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
@@ -76,7 +85,7 @@
                     <p class="text-sm font-bold text-gray-800 mb-3">Bank Transfer</p>
 
                     <label class="pay-opt block rounded-xl border-2 border-slate-200 p-3.5 bg-white" for="resume-pay-bank-transfer">
-                        <input type="radio" id="resume-pay-bank-transfer" name="payment_method" value="bank_transfer" class="sr-only">
+                        <input type="radio" id="resume-pay-bank-transfer" name="payment_method" value="bank_transfer" class="sr-only" x-model="method">
                         <div class="flex items-center gap-3">
                             <span class="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center bg-slate-100">
                                 <svg class="w-6 h-6 text-slate-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M4 11h16M5 21h14a2 2 0 002-2v-8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
@@ -99,12 +108,20 @@
                 <h2 class="text-base font-bold text-gray-700 mb-5">Summary</h2>
                 <div class="space-y-3 text-sm mb-4">
                     <div class="flex justify-between">
-                        <span class="text-gray-500">Amount</span>
-                        <span class="font-semibold text-gray-800">₱{{ number_format($enrollment->total_amount) }}</span>
+                        <span class="text-gray-500">Tuition</span>
+                        <span class="font-semibold text-gray-800">₱{{ number_format($enrollment->base_amount) }}</span>
+                    </div>
+                    <div class="flex justify-between" x-show="method === 'card'" x-cloak>
+                        <span class="text-gray-500">Convenience Fee <span class="text-xs text-gray-400">(PayMongo)</span></span>
+                        <span class="font-semibold text-gray-800" x-text="'₱' + formatPeso(fee)">₱{{ number_format($cardFee) }}</span>
+                    </div>
+                    <div class="border-t border-gray-100 pt-3 flex justify-between items-center">
+                        <span class="font-bold text-gray-800">Total</span>
+                        <span class="font-extrabold text-brand-700 text-2xl" x-text="'₱' + formatPeso(total)">₱{{ number_format($enrollment->base_amount + $cardFee) }}</span>
                     </div>
                 </div>
                 <button type="submit" class="flex items-center justify-center gap-2 w-full px-5 py-3.5 bg-accent-500 text-brand-950 font-extrabold rounded-xl shadow-md hover:bg-accent-400 transition-all text-base">
-                    Continue to payment
+                    Continue to payment — <span x-text="'₱' + formatPeso(total)">₱{{ number_format($enrollment->base_amount + $cardFee) }}</span>
                 </button>
                 <p class="text-[10px] text-gray-400 text-center mt-3">
                     If you selected Card, you will be redirected to PayMongo's secure checkout. Bank transfers require verification.

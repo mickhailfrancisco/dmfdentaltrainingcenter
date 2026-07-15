@@ -218,8 +218,8 @@
                         <span class="text-gray-500 flex-1">{{ $purchasable->name }} <span class="text-xs text-brand-600 font-bold ml-1">[{{ $enrollment->payment_type === 'downpayment' ? 'DP' : 'FULL' }}]</span></span>
                         <span class="font-semibold text-gray-800">₱{{ number_format($enrollment->base_amount) }}</span>
                     </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-500">Convenience Fee</span>
+                    <div class="flex justify-between" x-show="method === 'card'" x-cloak>
+                        <span class="text-gray-500">Convenience Fee <span class="text-xs text-gray-400">(PayMongo)</span></span>
                         <span class="font-semibold text-gray-800" x-text="'₱' + formatPeso(fee)">₱{{ number_format($enrollment->convenience_fee) }}</span>
                     </div>
                     <div class="border-t border-gray-100 pt-3 flex justify-between items-center">

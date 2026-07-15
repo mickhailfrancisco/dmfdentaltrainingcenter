@@ -3,6 +3,8 @@
    enrollment.css
    ============================================================= */
 
+[x-cloak] { display: none !important; }
+
 /* ── Base ─────────────────────────────────────────────────── */
 body { font-family: 'Inter', sans-serif; }
 
