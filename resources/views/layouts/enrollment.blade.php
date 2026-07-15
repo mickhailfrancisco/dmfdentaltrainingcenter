@@ -161,6 +161,9 @@
 
     @yield('scripts')
 
+    {{-- Alpine.js — reactive payment method / fee display on enrollment checkout pages --}}
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js"></script>
+
     {{-- Enrollment layout JS (scrollspy) --}}
     <script src="{{ asset('js/enrollment.js') }}"></script>
 </body>
