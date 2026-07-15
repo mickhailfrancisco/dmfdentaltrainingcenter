@@ -111,8 +111,8 @@
                         <span class="text-gray-500">Remaining tuition</span>
                         <span class="font-semibold text-gray-800">₱{{ number_format($balance_tuition) }}</span>
                     </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-500">Payment processing fee</span>
+                    <div class="flex justify-between" x-show="method === 'card'" x-cloak>
+                        <span class="text-gray-500">Payment processing fee <span class="text-xs text-gray-400">(PayMongo)</span></span>
                         <span class="font-semibold text-gray-800" x-text="'₱' + formatPeso(fee)">₱{{ number_format($convenience_fee) }}</span>
                     </div>
                     <div class="border-t border-gray-100 pt-3 flex justify-between items-center">

@@ -33,9 +33,14 @@ class ResumeCheckoutService
             ['reference_number' => $referenceNumber],
         );
 
+        $baseAmount = (int) $enrollment->base_amount;
+        $cardFee = EnrollmentPricingService::convenienceFeeForPaymentMethod('card', $baseAmount);
+
         return [
             'enrollment' => $enrollment,
             'pay_url' => $payUrl,
+            'cardFee' => $cardFee,
+            'bankTransferFee' => EnrollmentPricingService::convenienceFeeForPaymentMethod('bank_transfer', $baseAmount),
         ];
     }
 
