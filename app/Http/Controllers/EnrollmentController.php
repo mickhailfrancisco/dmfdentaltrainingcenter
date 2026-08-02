@@ -15,6 +15,7 @@ use App\Services\EnrollmentService;
 use App\Services\EnrollmentSuccessService;
 use App\Services\PaymongoService;
 use App\Support\Filament\CatalogOptionsCache;
+use App\Support\LandingFeedbackGallery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -35,8 +36,9 @@ class EnrollmentController extends Controller
     public function landing()
     {
         $packages = CatalogOptionsCache::landingPagePackages();
+        $feedbackImages = LandingFeedbackGallery::imageUrls();
 
-        return view('enrollment.landing', compact('packages'));
+        return view('enrollment.landing', compact('packages', 'feedbackImages'));
     }
 
     /**

@@ -28,7 +28,7 @@
                 {{-- Badge --}}
                 <span class="land-hero-1 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-800/50 text-accent-300 text-xs font-semibold uppercase tracking-widest mb-6 border border-brand-700 backdrop-blur-sm">
                     <span class="w-1.5 h-1.5 rounded-full bg-accent-500 animate-pulse"></span>
-                    2026 Enrollment Now Open
+                    2027 Enrollment Now Open
                 </span>
 
                 <h1 class="land-hero-2 text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-tight tracking-tight mb-6">
@@ -59,54 +59,56 @@
                     </a>
                 </div>
 
-                {{-- Social proof --}}
-                <div class="land-hero-5 mt-8 flex items-center justify-center lg:justify-start gap-3">
-                    <div class="flex -space-x-2">
-                        @foreach(['bg-pink-400','bg-purple-400','bg-amber-400','bg-teal-400'] as $color)
-                        <span class="w-8 h-8 rounded-full {{ $color }} ring-2 ring-white flex items-center justify-center text-white text-xs font-bold">
-                            {{ chr(rand(65,90)) }}
-                        </span>
-                        @endforeach
-                    </div>
-                    <p class="text-sm text-brand-200">
-                        <span class="font-semibold text-white">2,400+</span> graduates this year
-                    </p>
-                </div>
             </div>
 
-            {{-- Right: Stats card --}}
+            {{-- Right: Highlights card --}}
             <div class="flex-shrink-0 w-full max-w-sm lg:max-w-xs">
                 <div class="land-hero-6 bg-white rounded-2xl shadow-card border border-gray-100 p-6 space-y-5">
                     <h3 class="text-sm font-bold text-accent-600 uppercase tracking-widest">Why DMF Dental?</h3>
 
-                    @php
-                    $stats = [
-                        ['value' => '94%',  'label' => 'National Passing Rate', 'tone' => 'bg-accent-50 text-accent-700', 'icon' => 'trophy'],
-                        ['value' => '15+',  'label' => 'Years of Excellence',   'tone' => 'bg-brand-50 text-brand-700', 'icon' => 'calendar'],
-                        ['value' => '50+',  'label' => 'Expert Instructors',    'tone' => 'bg-emerald-50 text-emerald-700', 'icon' => 'user'],
-                        ['value' => '100%', 'label' => 'Satisfaction Guarantee','tone' => 'bg-brand-50 text-brand-700', 'icon' => 'check'],
-                    ];
-                    @endphp
-
-                    @foreach($stats as $stat)
-                    <div class="flex items-center gap-4">
-                        <span class="w-10 h-10 rounded-2xl {{ $stat['tone'] }} flex items-center justify-center shadow-sm">
-                            @if($stat['icon'] === 'trophy')
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8M12 17v4M7 4h10v3a5 5 0 0 1-10 0V4Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M5 7a3 3 0 0 0 3 3M19 7a3 3 0 0 1-3 3"/></svg>
-                            @elseif($stat['icon'] === 'calendar')
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 2v3M16 2v3M3 8h18M5 5h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/></svg>
-                            @elseif($stat['icon'] === 'user')
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M4 21a8 8 0 0 1 16 0"/></svg>
-                            @else
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7"/></svg>
-                            @endif
+                    {{-- Excellent board performance --}}
+                    <div class="flex items-start gap-4">
+                        <span class="w-10 h-10 rounded-2xl bg-accent-50 text-accent-700 flex items-center justify-center shadow-sm flex-shrink-0">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8M12 17v4M7 4h10v3a5 5 0 0 1-10 0V4Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M5 7a3 3 0 0 0 3 3M19 7a3 3 0 0 1-3 3"/></svg>
                         </span>
                         <div>
-                            <p class="text-2xl font-extrabold text-brand-600 stat-number leading-none">{{ $stat['value'] }}</p>
-                            <p class="text-xs text-gray-500 mt-0.5">{{ $stat['label'] }}</p>
+                            <p class="text-sm font-extrabold text-brand-700 leading-snug">Excellent board performance</p>
+                            <ul class="mt-1.5 space-y-1 text-xs text-gray-500" role="list">
+                                <li class="flex items-center gap-1.5">
+                                    <span class="w-1 h-1 rounded-full bg-accent-500 flex-shrink-0" aria-hidden="true"></span>
+                                    High passing rate
+                                </li>
+                                <li class="flex items-center gap-1.5">
+                                    <span class="w-1 h-1 rounded-full bg-accent-500 flex-shrink-0" aria-hidden="true"></span>
+                                    Multiple topnotchers
+                                </li>
+                            </ul>
                         </div>
                     </div>
-                    @endforeach
+
+                    {{-- 10 years of excellence --}}
+                    <div class="flex items-center gap-4">
+                        <span class="w-10 h-10 rounded-2xl bg-brand-50 text-brand-700 flex items-center justify-center shadow-sm flex-shrink-0">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 2v3M16 2v3M3 8h18M5 5h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/></svg>
+                        </span>
+                        <p class="text-sm font-extrabold text-brand-700 leading-snug">10 years of excellence</p>
+                    </div>
+
+                    {{-- Topnotch lecturers --}}
+                    <div class="flex items-center gap-4">
+                        <span class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center shadow-sm flex-shrink-0">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M4 21a8 8 0 0 1 16 0"/></svg>
+                        </span>
+                        <p class="text-sm font-extrabold text-brand-700 leading-snug">Topnotch lecturers</p>
+                    </div>
+
+                    {{-- Highly recommended --}}
+                    <div class="flex items-center gap-4">
+                        <span class="w-10 h-10 rounded-2xl bg-brand-50 text-brand-700 flex items-center justify-center shadow-sm flex-shrink-0">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7"/></svg>
+                        </span>
+                        <p class="text-sm font-extrabold text-brand-700 leading-snug">Highly recommended by previous board takers</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -366,30 +368,30 @@
             <p class="text-base text-gray-500 leading-relaxed">We provide the most comprehensive, intensive, and results-driven training programs in the country to ensure your success.</p>
         </div>
         
-        <div class="land-stagger grid grid-cols-1 md:grid-cols-3 gap-10">
+        <div class="land-stagger grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-7 items-stretch">
             <!-- Feature 1 -->
-            <div class="flex flex-col items-center text-center group">
-                <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-brand-600 group-hover:text-white transition-colors duration-300 shadow-sm">
+            <div class="flex h-full flex-col items-center text-center rounded-2xl border border-gray-100 bg-gray-50/60 p-6 sm:p-7 shadow-soft group">
+                <div class="w-16 h-16 bg-brand-50 text-brand-600 rounded-2xl flex items-center justify-center mb-5 group-hover:bg-brand-600 group-hover:text-white transition-colors duration-300 shadow-sm">
                     <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
                 </div>
                 <h4 class="text-xl font-bold text-gray-900 mb-3">Expert Lecturers</h4>
-                <p class="text-base text-gray-500 leading-relaxed">Learn directly from seasoned professionals with years of active practice and unparalleled teaching experience.</p>
+                <p class="text-base text-gray-500 leading-relaxed flex-1">Learn directly from board topnotchers and seasoned professionals with years of active practice and unparalleled teaching experience.</p>
             </div>
             <!-- Feature 2 -->
-            <div class="flex flex-col items-center text-center group">
-                <div class="w-16 h-16 bg-accent-50 text-accent-600 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-accent-600 group-hover:text-white transition-colors duration-300 shadow-sm">
+            <div class="flex h-full flex-col items-center text-center rounded-2xl border border-gray-100 bg-gray-50/60 p-6 sm:p-7 shadow-soft group">
+                <div class="w-16 h-16 bg-accent-50 text-accent-600 rounded-2xl flex items-center justify-center mb-5 group-hover:bg-accent-600 group-hover:text-white transition-colors duration-300 shadow-sm">
                     <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
                 </div>
-                <h4 class="text-xl font-bold text-gray-900 mb-3">Hybrid Flexibility</h4>
-                <p class="text-base text-gray-500 leading-relaxed">Mix Face-to-Face intensity with Pure Online convenience depending on your availability and learning style.</p>
+                <h4 class="text-xl font-bold text-gray-900 mb-3">Learning Flexibility</h4>
+                <p class="text-base text-gray-500 leading-relaxed flex-1">Multiple programs to choose from based on your preferred schedule and learning style.</p>
             </div>
             <!-- Feature 3 -->
-            <div class="flex flex-col items-center text-center group">
-                <div class="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-300 shadow-sm">
+            <div class="flex h-full flex-col items-center text-center rounded-2xl border border-gray-100 bg-gray-50/60 p-6 sm:p-7 shadow-soft group">
+                <div class="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-5 group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-300 shadow-sm">
                     <svg class="w-8 h-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
                 </div>
                 <h4 class="text-xl font-bold text-gray-900 mb-3">Highest Passing Rate</h4>
-                <p class="text-base text-gray-500 leading-relaxed">We produce topnotchers equipped with rigorous mock tests, exclusive coaching, and practical drills.</p>
+                <p class="text-base text-gray-500 leading-relaxed flex-1">We produce topnotchers and a lot of successful examinees every board exam — a proof that DMF’s theoretical classes and practical drills provide a strong foundation.</p>
             </div>
         </div>
     </div>
@@ -397,43 +399,171 @@
 
 
 {{-- ════════════════════════════════════════
-    TESTIMONIALS
+    FEEDBACK GALLERY (Facebook screenshots)
 ════════════════════════════════════════ --}}
-<section class="bg-gray-50 py-16 md:py-20" id="stories">
+@php
+    $feedbackPreviewCount = 6;
+    $feedbackTotal = count($feedbackImages ?? []);
+@endphp
+<section
+    class="bg-gray-50 py-16 md:py-20"
+    id="stories"
+    x-data="{
+        images: @js(array_values($feedbackImages ?? [])),
+        expanded: false,
+        open: false,
+        activeIndex: 0,
+        openLightbox(index) {
+            this.activeIndex = Number(index) || 0;
+            this.open = true;
+            document.body.classList.add('overflow-hidden');
+        },
+        closeLightbox() {
+            this.open = false;
+            document.body.classList.remove('overflow-hidden');
+        },
+        next() {
+            if (this.images.length === 0) { return; }
+            this.activeIndex = (this.activeIndex + 1) % this.images.length;
+        },
+        prev() {
+            if (this.images.length === 0) { return; }
+            this.activeIndex = (this.activeIndex - 1 + this.images.length) % this.images.length;
+        },
+        activeSrc() {
+            return this.images[this.activeIndex] || '';
+        }
+    }"
+    @keydown.escape.window="if (open) closeLightbox()"
+    @keydown.arrow-right.window="if (open) next()"
+    @keydown.arrow-left.window="if (open) prev()"
+>
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="land-reveal text-center mb-12">
+        <div class="land-reveal text-center mb-10 md:mb-12">
             <span class="text-sm font-semibold uppercase tracking-widest text-brand-600">Success Stories</span>
             <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight text-gray-900 mt-2">What Our Graduates Say</h2>
+            <p class="text-base text-gray-500 mt-3 max-w-2xl mx-auto">Real Facebook feedback from students and board passers. Tap a card to read it clearly.</p>
+            @if($feedbackTotal > 0)
+                <p class="mt-4 inline-flex items-center gap-2 rounded-full border border-brand-100 bg-white px-3 py-1 text-xs font-semibold text-brand-700 shadow-sm">
+                    <span class="w-1.5 h-1.5 rounded-full bg-accent-500" aria-hidden="true"></span>
+                    {{ $feedbackTotal }} real Facebook reviews
+                </p>
+            @endif
         </div>
 
-        <div class="land-stagger grid grid-cols-1 md:grid-cols-3 gap-6">
-            @php
-            $testimonials = [
-                ['name' => 'Dr. Maria Santos', 'year' => 'Board Passer 2024', 'quote' => 'DentReview gave me the structure and confidence I needed. The mock exams were spot-on — I felt completely prepared on exam day!', 'initial' => 'M', 'color' => 'bg-pink-400'],
-                ['name' => 'Dr. Jose Reyes', 'year' => 'Board Passer 2024', 'quote' => 'The comprehensive program covered every topic thoroughly. The instructors were brilliant and always available for questions.', 'initial' => 'J', 'color' => 'bg-brand-500'],
-                ['name' => 'Dr. Ana Lim', 'year' => 'Board Passer 2023', 'quote' => 'Flexible online sessions fit perfectly with my schedule. I passed on my first attempt and would highly recommend DentReview to everyone!', 'initial' => 'A', 'color' => 'bg-emerald-400'],
-            ];
-            @endphp
+        @if($feedbackTotal > 0)
+            <div class="land-stagger grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
+                @foreach($feedbackImages as $index => $imageUrl)
+                    <button
+                        type="button"
+                        class="feedback-gallery-item group relative block w-full overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-soft text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+                        @if($index >= $feedbackPreviewCount)
+                            x-show="expanded"
+                            x-cloak
+                        @endif
+                        @click="openLightbox({{ $index }})"
+                        aria-label="View feedback screenshot {{ $index + 1 }}"
+                    >
+                        <div class="aspect-[4/5] overflow-hidden bg-brand-50">
+                            <img
+                                src="{{ $imageUrl }}"
+                                alt="Student feedback screenshot {{ $index + 1 }}"
+                                class="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-[1.03]"
+                                loading="lazy"
+                                decoding="async"
+                            >
+                        </div>
+                        <div class="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-brand-950/70 via-brand-950/20 to-transparent px-4 pb-3 pt-10">
+                            <span class="text-xs font-semibold text-white/95">Tap to enlarge</span>
+                        </div>
+                    </button>
+                @endforeach
+            </div>
 
-            @foreach($testimonials as $t)
-            <div class="rounded-2xl border border-gray-100 bg-white p-6 shadow-soft text-slate-800">
-                <div class="flex gap-1 mb-4">
-                    @for($i=0; $i<5; $i++)
-                    <svg class="w-4 h-4 text-amber-400 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                    @endfor
+            @if($feedbackTotal > $feedbackPreviewCount)
+                <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <button
+                        type="button"
+                        class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-brand-950 text-white text-sm font-bold shadow-md hover:bg-brand-800 transition-colors"
+                        x-show="!expanded"
+                        @click="expanded = true"
+                    >
+                        Show more feedback
+                        <span class="rounded-full bg-white/15 px-2 py-0.5 text-xs font-semibold">+{{ $feedbackTotal - $feedbackPreviewCount }}</span>
+                    </button>
+                    <button
+                        type="button"
+                        class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-gray-200 bg-white text-brand-800 text-sm font-bold shadow-sm hover:bg-gray-50 transition-colors"
+                        x-show="expanded"
+                        x-cloak
+                        @click="expanded = false; document.getElementById('stories')?.scrollIntoView({ behavior: 'smooth', block: 'start' })"
+                    >
+                        Show less
+                    </button>
                 </div>
-                <p class="text-slate-600 text-sm leading-relaxed italic mb-5">"{{ $t['quote'] }}"</p>
-                <div class="flex items-center gap-3 min-h-[2.5rem]">
-                    <div class="w-9 h-9 shrink-0 rounded-full {{ $t['color'] }} flex items-center justify-center text-white text-sm font-bold" aria-hidden="true">{{ $t['initial'] }}</div>
-                    <div class="min-w-0 flex-1">
-                        <p class="testimonial-name font-semibold text-slate-900 text-sm leading-snug">{{ $t['name'] }}</p>
-                        <p class="testimonial-year text-xs text-slate-600 leading-snug mt-0.5">{{ $t['year'] }}</p>
-                    </div>
+            @endif
+        @else
+            <div class="rounded-2xl border border-dashed border-gray-200 bg-white px-6 py-12 text-center">
+                <p class="text-sm text-gray-500">Feedback screenshots will appear here once uploaded to <code class="text-xs bg-gray-100 px-1.5 py-0.5 rounded">public/images/feedback/</code>.</p>
+            </div>
+        @endif
+    </div>
+
+    {{-- Lightbox teleported to body so position:fixed isn't trapped by page transform animations --}}
+    <template x-teleport="body">
+        <div
+            x-show="open"
+            x-cloak
+            class="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-8"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Feedback screenshot"
+        >
+            <div class="absolute inset-0 bg-brand-950/85 backdrop-blur-sm" @click="closeLightbox()"></div>
+
+            <div class="relative z-10 flex w-full max-w-4xl flex-col items-center" @click.stop>
+                <div class="mb-3 flex w-full items-center justify-between gap-3 px-1">
+                    <p class="text-xs font-semibold text-white/80" x-text="(activeIndex + 1) + ' / ' + images.length"></p>
+                    <button
+                        type="button"
+                        class="w-10 h-10 rounded-full bg-white text-brand-900 shadow-md flex items-center justify-center hover:bg-accent-500 transition-colors"
+                        @click="closeLightbox()"
+                        aria-label="Close"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+
+                <div class="relative flex w-full items-center justify-center min-h-[40vh]">
+                    <button
+                        type="button"
+                        class="absolute left-0 sm:-left-3 z-20 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white text-brand-900 shadow-md flex items-center justify-center hover:bg-accent-500 transition-colors"
+                        @click="prev()"
+                        aria-label="Previous feedback"
+                        x-show="images.length > 1"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                    </button>
+
+                    <img
+                        :src="activeSrc()"
+                        alt="Enlarged feedback screenshot"
+                        class="max-h-[80vh] w-auto max-w-[min(100%,56rem)] rounded-xl shadow-card object-contain bg-white"
+                    >
+
+                    <button
+                        type="button"
+                        class="absolute right-0 sm:-right-3 z-20 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white text-brand-900 shadow-md flex items-center justify-center hover:bg-accent-500 transition-colors"
+                        @click="next()"
+                        aria-label="Next feedback"
+                        x-show="images.length > 1"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                    </button>
                 </div>
             </div>
-            @endforeach
         </div>
-    </div>
+    </template>
 </section>
 
 
