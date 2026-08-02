@@ -17,6 +17,71 @@ class EnrollmentLandingPageTest extends TestCase
         $this->assertStringContainsString('land-stagger', $content);
     }
 
+    public function test_landing_hero_highlights_replace_analytics_stats(): void
+    {
+        $response = $this->get('/');
+
+        $response->assertOk();
+        $response->assertSee('Why DMF Dental?');
+        $response->assertSee('Excellent board performance');
+        $response->assertSee('High passing rate');
+        $response->assertSee('Multiple topnotchers');
+        $response->assertSee('10 years of excellence');
+        $response->assertSee('Topnotch lecturers');
+        $response->assertSee('Highly recommended by previous board takers');
+        $response->assertDontSee('National Passing Rate');
+        $response->assertDontSee('Satisfaction Guarantee');
+    }
+
+    public function test_landing_hero_shows_2027_enrollment_badge_without_graduates_social_proof(): void
+    {
+        $response = $this->get('/');
+
+        $response->assertOk();
+        $response->assertSee('2027 Enrollment Now Open');
+        $response->assertDontSee('2026 Enrollment Now Open');
+        $response->assertDontSee('2,400+');
+        $response->assertDontSee('graduates this year');
+    }
+
+    public function test_landing_expert_lecturers_copy_mentions_board_topnotchers(): void
+    {
+        $response = $this->get('/');
+
+        $response->assertOk();
+        $response->assertSee('Expert Lecturers');
+        $response->assertSee('Learn directly from board topnotchers and seasoned professionals');
+    }
+
+    public function test_landing_shows_learning_flexibility_copy(): void
+    {
+        $response = $this->get('/');
+
+        $response->assertOk();
+        $response->assertSee('Learning Flexibility');
+        $response->assertSee('Multiple programs to choose from based on your preferred schedule and learning style.');
+        $response->assertDontSee('Hybrid Flexibility');
+    }
+
+    public function test_landing_shows_highest_passing_rate_copy(): void
+    {
+        $response = $this->get('/');
+
+        $response->assertOk();
+        $response->assertSee('Highest Passing Rate');
+        $response->assertSee('We produce topnotchers and a lot of successful examinees every board exam');
+        $response->assertSee('theoretical classes and practical drills provide a strong foundation');
+    }
+
+    public function test_landing_advantage_features_use_equal_height_cards(): void
+    {
+        $content = $this->get('/')->getContent() ?: '';
+
+        $this->assertStringContainsString('items-stretch', $content);
+        $this->assertStringContainsString('flex h-full flex-col', $content);
+        $this->assertStringContainsString('Why Choose DMF Dental?', $content);
+    }
+
     public function test_landing_includes_hybrid_intensive_program_overview_copy(): void
     {
         $response = $this->get('/');
@@ -70,13 +135,39 @@ class EnrollmentLandingPageTest extends TestCase
         $response->assertSee('DMF shirt and CD kit');
     }
 
-    public function test_landing_renders_success_stories_with_graduate_attribution_text(): void
+    public function test_landing_renders_feedback_gallery_when_screenshots_exist(): void
     {
-        $response = $this->get('/');
+        $directory = public_path('images/feedback');
+        if (! is_dir($directory)) {
+            mkdir($directory, 0755, true);
+        }
 
-        $response->assertOk();
-        $response->assertSee('What Our Graduates Say');
-        $response->assertSee('Dr. Maria Santos');
-        $response->assertSee('Board Passer 2024');
+        $created = [];
+        for ($i = 1; $i <= 8; $i++) {
+            $filename = sprintf('zz-test-feedback-%02d.png', $i);
+            $path = $directory.DIRECTORY_SEPARATOR.$filename;
+            file_put_contents($path, 'fake-image');
+            $created[] = $path;
+        }
+
+        try {
+            $response = $this->get('/');
+
+            $response->assertOk();
+            $response->assertSee('What Our Graduates Say');
+            $response->assertSee('Tap a card to read it clearly');
+            $response->assertSee('real Facebook reviews');
+            $response->assertSee('Show more feedback');
+            $response->assertSee('feedback-gallery-item', false);
+            $response->assertSee('x-teleport="body"', false);
+            $response->assertSee(asset('images/feedback/zz-test-feedback-01.png'), false);
+            $response->assertDontSee('Dr. Maria Santos');
+        } finally {
+            foreach ($created as $path) {
+                if (is_file($path)) {
+                    unlink($path);
+                }
+            }
+        }
     }
 }
