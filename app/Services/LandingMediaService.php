@@ -25,8 +25,17 @@ class LandingMediaService
     }
 
     /**
+     * Storage visibility for newly uploaded landing media assets.
+     */
+    public function uploadVisibility(): string
+    {
+        return $this->shouldUseSignedUrls($this->disk()) ? 'private' : 'public';
+    }
+
+    /**
      * Resolve a display URL for a stored image path.
      * Falls back to asset() for legacy public/images/feedback/* paths bundled in the repo.
+     * Uses pre-signed temporary URLs for private disks.
      */
     public function url(?string $path): ?string
     {
@@ -44,11 +53,20 @@ class LandingMediaService
             return asset($path);
         }
 
+        $disk = $this->disk();
+
         try {
-            return Storage::disk($this->disk())->url($path);
+            if ($this->shouldUseSignedUrls($disk)) {
+                return Storage::disk($disk)->temporaryUrl(
+                    $path,
+                    $this->signedUrlExpiresAt(),
+                );
+            }
+
+            return Storage::disk($disk)->url($path);
         } catch (\Throwable $exception) {
             Log::warning('Failed to resolve landing media asset URL.', [
-                'disk' => $this->disk(),
+                'disk' => $disk,
                 'path' => $path,
                 'error' => $exception->getMessage(),
             ]);
@@ -85,5 +103,21 @@ class LandingMediaService
                 'error' => $exception->getMessage(),
             ]);
         }
+    }
+
+    private function shouldUseSignedUrls(string $disk): bool
+    {
+        if (! (bool) config('landing-media.use_signed_urls', true)) {
+            return false;
+        }
+
+        return config("filesystems.disks.{$disk}.driver") === 's3';
+    }
+
+    private function signedUrlExpiresAt(): \DateTimeInterface
+    {
+        $minutes = max(1, (int) config('landing-media.signed_url_minutes', 15));
+
+        return now()->addMinutes($minutes);
     }
 }

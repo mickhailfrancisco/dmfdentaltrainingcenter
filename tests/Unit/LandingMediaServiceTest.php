@@ -59,6 +59,45 @@ class LandingMediaServiceTest extends TestCase
         $this->assertStringContainsString('landing/feedback/sample.jpg', (string) $service->url('landing/feedback/sample.jpg'));
     }
 
+    public function test_url_uses_a_signed_temporary_url_by_default_for_the_s3_disk(): void
+    {
+        Storage::disk('dmf_s3')->put('landing/feedback/signed.jpg', 'fake-image');
+
+        $service = new LandingMediaService;
+        $url = (string) $service->url('landing/feedback/signed.jpg');
+
+        $this->assertStringContainsString('landing/feedback/signed.jpg', $url);
+        $this->assertStringContainsString('expiration=', $url);
+    }
+
+    public function test_url_falls_back_to_a_plain_url_when_signed_urls_are_disabled(): void
+    {
+        config(['landing-media.use_signed_urls' => false]);
+        Storage::disk('dmf_s3')->put('landing/feedback/plain.jpg', 'fake-image');
+
+        $service = new LandingMediaService;
+        $url = (string) $service->url('landing/feedback/plain.jpg');
+
+        $this->assertStringContainsString('landing/feedback/plain.jpg', $url);
+        $this->assertStringNotContainsString('expiration=', $url);
+    }
+
+    public function test_upload_visibility_is_private_when_signed_urls_are_enabled(): void
+    {
+        $service = new LandingMediaService;
+
+        $this->assertSame('private', $service->uploadVisibility());
+    }
+
+    public function test_upload_visibility_is_public_when_signed_urls_are_disabled(): void
+    {
+        config(['landing-media.use_signed_urls' => false]);
+
+        $service = new LandingMediaService;
+
+        $this->assertSame('public', $service->uploadVisibility());
+    }
+
     public function test_url_falls_back_to_asset_for_legacy_public_path_that_exists_on_disk(): void
     {
         $directory = public_path('images/feedback');

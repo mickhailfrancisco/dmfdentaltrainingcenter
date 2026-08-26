@@ -62,7 +62,7 @@ class GalleryImageResource extends Resource
                 ->imagePreviewHeight('150')
                 ->disk($service->disk())
                 ->directory($service->galleryDirectory())
-                ->visibility('public')
+                ->visibility($service->uploadVisibility())
                 ->maxSize(5120)
                 ->required()
                 ->moveFiles()
