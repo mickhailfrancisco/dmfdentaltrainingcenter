@@ -58,7 +58,7 @@ class FeedbackImageResourceTest extends TestCase
 
         Livewire::test(CreateFeedbackImage::class)
             ->fillForm([
-                'image_path' => $upload,
+                'image_path' => [$upload],
                 'is_active' => true,
             ])
             ->call('create')
@@ -68,6 +68,35 @@ class FeedbackImageResourceTest extends TestCase
 
         $this->assertStringStartsWith('landing/feedback/', (string) $image->image_path);
         Storage::disk('dmf_s3')->assertExists((string) $image->image_path);
+    }
+
+    public function test_admin_can_bulk_upload_multiple_feedback_images_in_one_submission(): void
+    {
+        $admin = $this->makeAdmin();
+        $uploads = [
+            UploadedFile::fake()->image('feedback-1.jpg'),
+            UploadedFile::fake()->image('feedback-2.jpg'),
+            UploadedFile::fake()->image('feedback-3.jpg'),
+        ];
+
+        $this->actingAs($admin);
+
+        Livewire::test(CreateFeedbackImage::class)
+            ->fillForm([
+                'image_path' => $uploads,
+                'is_active' => true,
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(3, FeedbackImage::query()->count());
+
+        FeedbackImage::query()->get()->each(function (FeedbackImage $image): void {
+            $this->assertStringStartsWith('landing/feedback/', (string) $image->image_path);
+            Storage::disk('dmf_s3')->assertExists((string) $image->image_path);
+            $this->assertTrue($image->is_active);
+            $this->assertFalse($image->is_featured);
+        });
     }
 
     public function test_featuring_a_fourth_image_is_rejected(): void

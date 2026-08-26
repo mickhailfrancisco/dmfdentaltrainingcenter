@@ -58,7 +58,7 @@ class GalleryImageResourceTest extends TestCase
 
         Livewire::test(CreateGalleryImage::class)
             ->fillForm([
-                'image_path' => $upload,
+                'image_path' => [$upload],
                 'is_active' => true,
             ])
             ->call('create')
@@ -68,6 +68,35 @@ class GalleryImageResourceTest extends TestCase
 
         $this->assertStringStartsWith('landing/gallery/', (string) $image->image_path);
         Storage::disk('dmf_s3')->assertExists((string) $image->image_path);
+    }
+
+    public function test_admin_can_bulk_upload_multiple_gallery_images_in_one_submission(): void
+    {
+        $admin = $this->makeAdmin();
+        $uploads = [
+            UploadedFile::fake()->image('gallery-1.jpg'),
+            UploadedFile::fake()->image('gallery-2.jpg'),
+            UploadedFile::fake()->image('gallery-3.jpg'),
+        ];
+
+        $this->actingAs($admin);
+
+        Livewire::test(CreateGalleryImage::class)
+            ->fillForm([
+                'image_path' => $uploads,
+                'is_active' => true,
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(3, GalleryImage::query()->count());
+
+        GalleryImage::query()->get()->each(function (GalleryImage $image): void {
+            $this->assertStringStartsWith('landing/gallery/', (string) $image->image_path);
+            Storage::disk('dmf_s3')->assertExists((string) $image->image_path);
+            $this->assertTrue($image->is_active);
+            $this->assertFalse($image->is_featured);
+        });
     }
 
     public function test_featuring_a_fourth_image_is_rejected(): void
