@@ -12,6 +12,7 @@ use App\Models\FeedbackImage;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -105,21 +106,29 @@ class FeedbackImageResourceTest extends TestCase
     {
         $admin = $this->makeAdmin();
 
-        // 'Unknown-10.jpg' is one of the screenshots bundled under public/images/feedback,
-        // matching the shape of rows created by FeedbackImageSeeder. It is deliberately
-        // NOT put on the faked dmf_s3 disk, since a legacy row was never uploaded to S3 —
-        // Storage::disk('dmf_s3')->exists() for this path is false.
-        $legacyPath = 'images/feedback/Unknown-10.jpg';
-        $image = FeedbackImage::factory()->create(['image_path' => $legacyPath]);
+        // Simulates the shape of rows created by FeedbackImageSeeder: an image_path under
+        // the legacy public prefix, resolved via public_path() rather than the S3 disk.
+        // Deliberately NOT put on the faked dmf_s3 disk, since a legacy row was never
+        // uploaded to S3 — Storage::disk('dmf_s3')->exists() for this path is false.
+        $legacyPath = 'images/feedback/legacy-list-test.jpg';
+        $directory = public_path('images/feedback');
+        File::ensureDirectoryExists($directory);
+        file_put_contents(public_path($legacyPath), 'fake-legacy-image');
 
-        Storage::disk('dmf_s3')->assertMissing($legacyPath);
+        try {
+            $image = FeedbackImage::factory()->create(['image_path' => $legacyPath]);
 
-        $this->actingAs($admin);
+            Storage::disk('dmf_s3')->assertMissing($legacyPath);
 
-        Livewire::test(ListFeedbackImages::class)
-            ->assertSuccessful()
-            ->assertCanSeeTableRecords([$image])
-            ->assertSee(asset($legacyPath), false);
+            $this->actingAs($admin);
+
+            Livewire::test(ListFeedbackImages::class)
+                ->assertSuccessful()
+                ->assertCanSeeTableRecords([$image])
+                ->assertSee(asset($legacyPath), false);
+        } finally {
+            @unlink(public_path($legacyPath));
+        }
     }
 
     public function test_editing_a_legacy_path_row_without_reuploading_preserves_the_path(): void
