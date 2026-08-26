@@ -32,7 +32,7 @@ class CreateFeedbackImage extends CreateRecord
                 ->imagePreviewHeight('150')
                 ->disk($service->disk())
                 ->directory($service->feedbackDirectory())
-                ->visibility('public')
+                ->visibility($service->uploadVisibility())
                 ->maxSize(5120)
                 ->required()
                 ->moveFiles()

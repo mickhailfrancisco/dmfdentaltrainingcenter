@@ -27,4 +27,14 @@ return [
     | use asset() until replaced via admin upload.
     */
     'legacy_feedback_public_prefix' => 'images/feedback/',
+
+    /*
+    | Landing images are typically stored in a private bucket (e.g. Laravel
+    | Cloud's managed object storage) — pre-signed temporary URLs are used
+    | by default. Disable only when the bucket/object policy is intentionally
+    | public.
+    */
+    'use_signed_urls' => env('LANDING_MEDIA_USE_SIGNED_URLS', true),
+
+    'signed_url_minutes' => (int) env('LANDING_MEDIA_SIGNED_URL_MINUTES', 15),
 ];
