@@ -149,12 +149,14 @@ class EnrollmentLandingPageTest extends TestCase
     public function test_landing_shows_only_featured_active_feedback_images_with_see_more_link(): void
     {
         $featured = FeedbackImage::factory()->featured()->count(3)->create();
-        FeedbackImage::factory()->create(['is_featured' => false]);
-        FeedbackImage::factory()->featured()->create(['is_active' => false]);
+        $nonFeatured = FeedbackImage::factory()->create(['is_featured' => false]);
+        $inactiveFeatured = FeedbackImage::factory()->featured()->create(['is_active' => false]);
 
         foreach ($featured as $image) {
             Storage::disk('dmf_s3')->put($image->image_path, 'fake-image');
         }
+        Storage::disk('dmf_s3')->put($nonFeatured->image_path, 'fake-image');
+        Storage::disk('dmf_s3')->put($inactiveFeatured->image_path, 'fake-image');
 
         $response = $this->get('/');
 
@@ -167,6 +169,9 @@ class EnrollmentLandingPageTest extends TestCase
         foreach ($featured as $image) {
             $response->assertSee($image->image_path, false);
         }
+
+        $response->assertDontSee($nonFeatured->image_path, false);
+        $response->assertDontSee($inactiveFeatured->image_path, false);
     }
 
     public function test_landing_shows_feedback_empty_state_when_no_featured_images(): void
@@ -180,11 +185,14 @@ class EnrollmentLandingPageTest extends TestCase
     public function test_landing_shows_only_featured_active_gallery_images_with_cta(): void
     {
         $featured = GalleryImage::factory()->featured()->count(3)->create();
-        GalleryImage::factory()->create(['is_featured' => false]);
+        $nonFeatured = GalleryImage::factory()->create(['is_featured' => false]);
+        $inactiveFeatured = GalleryImage::factory()->featured()->create(['is_active' => false]);
 
         foreach ($featured as $image) {
             Storage::disk('dmf_s3')->put($image->image_path, 'fake-image');
         }
+        Storage::disk('dmf_s3')->put($nonFeatured->image_path, 'fake-image');
+        Storage::disk('dmf_s3')->put($inactiveFeatured->image_path, 'fake-image');
 
         $response = $this->get('/');
 
@@ -196,6 +204,9 @@ class EnrollmentLandingPageTest extends TestCase
         foreach ($featured as $image) {
             $response->assertSee($image->image_path, false);
         }
+
+        $response->assertDontSee($nonFeatured->image_path, false);
+        $response->assertDontSee($inactiveFeatured->image_path, false);
     }
 
     public function test_landing_shows_gallery_empty_state_when_no_featured_images(): void
