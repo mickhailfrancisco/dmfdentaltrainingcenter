@@ -9,6 +9,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationGroup;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Assets\Css;
@@ -43,6 +44,12 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->sidebarCollapsibleOnDesktop()
             ->collapsibleNavigationGroups(false)
+            ->navigationGroups([
+                NavigationGroup::make('Enrollment'),
+                NavigationGroup::make('Catalog'),
+                NavigationGroup::make('Administration'),
+                NavigationGroup::make('Content'),
+            ])
             ->maxContentWidth(MaxWidth::Full)
             ->colors([
                 // Primary = brand gold (accent color of the main site)
