@@ -25,9 +25,9 @@ class FeedbackImageSeeder extends Seeder
      */
     private const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
 
-    public function run(): void
+    public function run(?string $directory = null): void
     {
-        $directory = public_path(self::RELATIVE_DIRECTORY);
+        $directory = $directory ?? public_path(self::RELATIVE_DIRECTORY);
 
         if (! is_dir($directory)) {
             return;

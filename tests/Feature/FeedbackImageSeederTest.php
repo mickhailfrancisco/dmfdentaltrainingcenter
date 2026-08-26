@@ -17,7 +17,7 @@ class FeedbackImageSeederTest extends TestCase
     {
         parent::setUp();
 
-        $this->directory = public_path('images/feedback');
+        $this->directory = storage_path('framework/testing/feedback-images-'.uniqid('', true));
         File::ensureDirectoryExists($this->directory);
     }
 
@@ -34,7 +34,7 @@ class FeedbackImageSeederTest extends TestCase
             file_put_contents($this->directory.'/'.$filename, 'fake-image');
         }
 
-        (new FeedbackImageSeeder)->run();
+        (new FeedbackImageSeeder)->run($this->directory);
 
         $this->assertDatabaseCount('feedback_images', 4);
 
@@ -55,8 +55,8 @@ class FeedbackImageSeederTest extends TestCase
     {
         file_put_contents($this->directory.'/only.jpg', 'fake-image');
 
-        (new FeedbackImageSeeder)->run();
-        (new FeedbackImageSeeder)->run();
+        (new FeedbackImageSeeder)->run($this->directory);
+        (new FeedbackImageSeeder)->run($this->directory);
 
         $this->assertDatabaseCount('feedback_images', 1);
     }
@@ -65,7 +65,7 @@ class FeedbackImageSeederTest extends TestCase
     {
         File::deleteDirectory($this->directory);
 
-        (new FeedbackImageSeeder)->run();
+        (new FeedbackImageSeeder)->run($this->directory);
 
         $this->assertDatabaseCount('feedback_images', 0);
     }
