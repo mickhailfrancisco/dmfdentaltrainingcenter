@@ -402,7 +402,6 @@
     FEEDBACK GALLERY (Facebook screenshots)
 ════════════════════════════════════════ --}}
 @php
-    $feedbackPreviewCount = 6;
     $feedbackTotal = count($feedbackImages ?? []);
 @endphp
 <section
@@ -410,7 +409,6 @@
     id="stories"
     x-data="{
         images: @js(array_values($feedbackImages ?? [])),
-        expanded: false,
         open: false,
         activeIndex: 0,
         openLightbox(index) {
@@ -443,12 +441,6 @@
             <span class="text-sm font-semibold uppercase tracking-widest text-brand-600">Success Stories</span>
             <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight text-gray-900 mt-2">What Our Graduates Say</h2>
             <p class="text-base text-gray-500 mt-3 max-w-2xl mx-auto">Real Facebook feedback from students and board passers. Tap a card to read it clearly.</p>
-            @if($feedbackTotal > 0)
-                <p class="mt-4 inline-flex items-center gap-2 rounded-full border border-brand-100 bg-white px-3 py-1 text-xs font-semibold text-brand-700 shadow-sm">
-                    <span class="w-1.5 h-1.5 rounded-full bg-accent-500" aria-hidden="true"></span>
-                    {{ $feedbackTotal }} real Facebook reviews
-                </p>
-            @endif
         </div>
 
         @if($feedbackTotal > 0)
@@ -457,10 +449,6 @@
                     <button
                         type="button"
                         class="feedback-gallery-item group relative block w-full overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-soft text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
-                        @if($index >= $feedbackPreviewCount)
-                            x-show="expanded"
-                            x-cloak
-                        @endif
                         @click="openLightbox({{ $index }})"
                         aria-label="View feedback screenshot {{ $index + 1 }}"
                     >
@@ -480,31 +468,17 @@
                 @endforeach
             </div>
 
-            @if($feedbackTotal > $feedbackPreviewCount)
-                <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-                    <button
-                        type="button"
-                        class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-brand-950 text-white text-sm font-bold shadow-md hover:bg-brand-800 transition-colors"
-                        x-show="!expanded"
-                        @click="expanded = true"
-                    >
-                        Show more feedback
-                        <span class="rounded-full bg-white/15 px-2 py-0.5 text-xs font-semibold">+{{ $feedbackTotal - $feedbackPreviewCount }}</span>
-                    </button>
-                    <button
-                        type="button"
-                        class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-gray-200 bg-white text-brand-800 text-sm font-bold shadow-sm hover:bg-gray-50 transition-colors"
-                        x-show="expanded"
-                        x-cloak
-                        @click="expanded = false; document.getElementById('stories')?.scrollIntoView({ behavior: 'smooth', block: 'start' })"
-                    >
-                        Show less
-                    </button>
-                </div>
-            @endif
+            <div class="mt-8 flex justify-center">
+                <a
+                    href="{{ route('feedback') }}"
+                    class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-brand-950 text-white text-sm font-bold shadow-md hover:bg-brand-800 transition-colors"
+                >
+                    See more feedback
+                </a>
+            </div>
         @else
             <div class="rounded-2xl border border-dashed border-gray-200 bg-white px-6 py-12 text-center">
-                <p class="text-sm text-gray-500">Feedback screenshots will appear here once uploaded to <code class="text-xs bg-gray-100 px-1.5 py-0.5 rounded">public/images/feedback/</code>.</p>
+                <p class="text-sm text-gray-500">Feedback screenshots will appear here once uploaded from the admin panel.</p>
             </div>
         @endif
     </div>
@@ -564,6 +538,54 @@
             </div>
         </div>
     </template>
+</section>
+
+
+{{-- ════════════════════════════════════════
+    GALLERY SECTION
+════════════════════════════════════════ --}}
+@php
+    $galleryTotal = count($galleryImages ?? []);
+@endphp
+<section class="bg-white py-16 md:py-20" id="gallery">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="land-reveal text-center mb-10 md:mb-12">
+            <span class="text-sm font-semibold uppercase tracking-widest text-brand-600">Gallery</span>
+            <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight text-gray-900 mt-2">Inside DMF Dental Review Center</h2>
+            <p class="text-base text-gray-500 mt-3 max-w-2xl mx-auto">A look at our facilities, training sessions, and student life.</p>
+        </div>
+
+        @if($galleryTotal > 0)
+            <div class="land-stagger grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
+                @foreach($galleryImages as $index => $imageUrl)
+                    <div class="relative block w-full overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-soft">
+                        <div class="aspect-[4/5] overflow-hidden bg-brand-50">
+                            <img
+                                src="{{ $imageUrl }}"
+                                alt="Gallery photo {{ $index + 1 }}"
+                                class="h-full w-full object-cover object-top"
+                                loading="lazy"
+                                decoding="async"
+                            >
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+
+            <div class="mt-8 flex justify-center">
+                <a
+                    href="{{ route('gallery') }}"
+                    class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-brand-950 text-white text-sm font-bold shadow-md hover:bg-brand-800 transition-colors"
+                >
+                    View full gallery
+                </a>
+            </div>
+        @else
+            <div class="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-6 py-12 text-center">
+                <p class="text-sm text-gray-500">Gallery photos will appear here once uploaded from the admin panel.</p>
+            </div>
+        @endif
+    </div>
 </section>
 
 

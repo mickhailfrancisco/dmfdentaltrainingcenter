@@ -4,10 +4,21 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\FeedbackImage;
+use App\Models\GalleryImage;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class EnrollmentLandingPageTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Storage::fake('dmf_s3');
+        config(['landing-media.disk' => 'dmf_s3']);
+    }
+
     public function test_landing_includes_scroll_animation_markup_for_js(): void
     {
         $content = $this->get('/')->getContent() ?: '';
@@ -135,39 +146,63 @@ class EnrollmentLandingPageTest extends TestCase
         $response->assertSee('DMF shirt and CD kit');
     }
 
-    public function test_landing_renders_feedback_gallery_when_screenshots_exist(): void
+    public function test_landing_shows_only_featured_active_feedback_images_with_see_more_link(): void
     {
-        $directory = public_path('images/feedback');
-        if (! is_dir($directory)) {
-            mkdir($directory, 0755, true);
+        $featured = FeedbackImage::factory()->featured()->count(3)->create();
+        FeedbackImage::factory()->create(['is_featured' => false]);
+        FeedbackImage::factory()->featured()->create(['is_active' => false]);
+
+        foreach ($featured as $image) {
+            Storage::disk('dmf_s3')->put($image->image_path, 'fake-image');
         }
 
-        $created = [];
-        for ($i = 1; $i <= 8; $i++) {
-            $filename = sprintf('zz-test-feedback-%02d.png', $i);
-            $path = $directory.DIRECTORY_SEPARATOR.$filename;
-            file_put_contents($path, 'fake-image');
-            $created[] = $path;
+        $response = $this->get('/');
+
+        $response->assertOk();
+        $response->assertSee('What Our Graduates Say');
+        $response->assertSee('feedback-gallery-item', false);
+        $response->assertSee(route('feedback'), false);
+        $response->assertSee('See more feedback');
+
+        foreach ($featured as $image) {
+            $response->assertSee($image->image_path, false);
+        }
+    }
+
+    public function test_landing_shows_feedback_empty_state_when_no_featured_images(): void
+    {
+        $response = $this->get('/');
+
+        $response->assertOk();
+        $response->assertSee('Feedback screenshots will appear here once uploaded from the admin panel.');
+    }
+
+    public function test_landing_shows_only_featured_active_gallery_images_with_cta(): void
+    {
+        $featured = GalleryImage::factory()->featured()->count(3)->create();
+        GalleryImage::factory()->create(['is_featured' => false]);
+
+        foreach ($featured as $image) {
+            Storage::disk('dmf_s3')->put($image->image_path, 'fake-image');
         }
 
-        try {
-            $response = $this->get('/');
+        $response = $this->get('/');
 
-            $response->assertOk();
-            $response->assertSee('What Our Graduates Say');
-            $response->assertSee('Tap a card to read it clearly');
-            $response->assertSee('real Facebook reviews');
-            $response->assertSee('Show more feedback');
-            $response->assertSee('feedback-gallery-item', false);
-            $response->assertSee('x-teleport="body"', false);
-            $response->assertSee(asset('images/feedback/zz-test-feedback-01.png'), false);
-            $response->assertDontSee('Dr. Maria Santos');
-        } finally {
-            foreach ($created as $path) {
-                if (is_file($path)) {
-                    unlink($path);
-                }
-            }
+        $response->assertOk();
+        $response->assertSee('Inside DMF Dental Review Center');
+        $response->assertSee(route('gallery'), false);
+        $response->assertSee('View full gallery');
+
+        foreach ($featured as $image) {
+            $response->assertSee($image->image_path, false);
         }
+    }
+
+    public function test_landing_shows_gallery_empty_state_when_no_featured_images(): void
+    {
+        $response = $this->get('/');
+
+        $response->assertOk();
+        $response->assertSee('Gallery photos will appear here once uploaded from the admin panel.');
     }
 }
