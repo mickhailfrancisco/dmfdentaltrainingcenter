@@ -5,6 +5,7 @@ use App\Http\Controllers\BankTransferProofController;
 use App\Http\Controllers\EnrollmentAgreementController;
 use App\Http\Controllers\EnrollmentBalanceController;
 use App\Http\Controllers\EnrollmentController;
+use App\Http\Controllers\LandingMediaController;
 use App\Http\Controllers\PaymentLinkController;
 use App\Http\Controllers\PaymongoWebhookController;
 use App\Http\Controllers\ResumeCheckoutController;
@@ -62,3 +63,6 @@ Route::post('/webhooks/paymongo', [PaymongoWebhookController::class, 'handle'])
 
 // Admin panel root redirect
 Route::redirect('/admin', '/admin/enrollments');
+
+Route::get('/feedback', [LandingMediaController::class, 'feedback'])->name('feedback');
+Route::get('/gallery', [LandingMediaController::class, 'gallery'])->name('gallery');

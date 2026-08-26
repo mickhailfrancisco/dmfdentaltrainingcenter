@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\EnrollPayRequest;
 use App\Http\Requests\StoreEnrollmentRequest;
 use App\Models\Enrollment;
+use App\Models\FeedbackImage;
+use App\Models\GalleryImage;
 use App\Models\Package;
 use App\Models\Program;
 use App\Services\BankTransferService;
@@ -15,7 +17,6 @@ use App\Services\EnrollmentService;
 use App\Services\EnrollmentSuccessService;
 use App\Services\PaymongoService;
 use App\Support\Filament\CatalogOptionsCache;
-use App\Support\LandingFeedbackGallery;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -36,9 +37,32 @@ class EnrollmentController extends Controller
     public function landing()
     {
         $packages = CatalogOptionsCache::landingPagePackages();
-        $feedbackImages = LandingFeedbackGallery::imageUrls();
 
-        return view('enrollment.landing', compact('packages', 'feedbackImages'));
+        $feedbackImages = FeedbackImage::query()
+            ->where('is_active', true)
+            ->where('is_featured', true)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->limit(3)
+            ->get()
+            ->map(fn (FeedbackImage $image): ?string => $image->imageUrl())
+            ->filter()
+            ->values()
+            ->all();
+
+        $galleryImages = GalleryImage::query()
+            ->where('is_active', true)
+            ->where('is_featured', true)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->limit(3)
+            ->get()
+            ->map(fn (GalleryImage $image): ?string => $image->imageUrl())
+            ->filter()
+            ->values()
+            ->all();
+
+        return view('enrollment.landing', compact('packages', 'feedbackImages', 'galleryImages'));
     }
 
     /**
