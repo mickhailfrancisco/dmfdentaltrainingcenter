@@ -58,6 +58,7 @@ class GalleryImageResource extends Resource
             Forms\Components\FileUpload::make('image_path')
                 ->label('Image')
                 ->image()
+                ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
                 ->imagePreviewHeight('150')
                 ->disk($service->disk())
                 ->directory($service->galleryDirectory())
@@ -65,6 +66,7 @@ class GalleryImageResource extends Resource
                 ->maxSize(5120)
                 ->required()
                 ->moveFiles()
+                ->fetchFileInformation(false)
                 ->columnSpanFull(),
 
             Forms\Components\Toggle::make('is_active')
@@ -75,14 +77,12 @@ class GalleryImageResource extends Resource
 
     public static function table(Table $table): Table
     {
-        $service = app(LandingMediaService::class);
-
         return $table
             ->columns([
                 Tables\Columns\ImageColumn::make('image_path')
                     ->label('Image')
-                    ->disk($service->disk())
-                    ->visibility('public')
+                    ->getStateUsing(fn (GalleryImage $record): ?string => $record->imageUrl())
+                    ->checkFileExistence(false)
                     ->square(),
 
                 Tables\Columns\IconColumn::make('is_featured')

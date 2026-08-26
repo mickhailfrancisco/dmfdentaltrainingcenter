@@ -174,6 +174,28 @@ class EnrollmentLandingPageTest extends TestCase
         $response->assertDontSee($inactiveFeatured->image_path, false);
     }
 
+    public function test_landing_caps_feedback_images_at_three_even_if_more_are_featured(): void
+    {
+        // Simulates FeedbackImageSeeder's documented edge case where a re-run can push the
+        // featured count above 3, bypassing the Filament table-action guard entirely since
+        // these rows are inserted directly, not toggled through the admin UI.
+        $featured = FeedbackImage::factory()->featured()->count(4)->create();
+
+        foreach ($featured as $image) {
+            Storage::disk('dmf_s3')->put($image->image_path, 'fake-image');
+        }
+
+        $response = $this->get('/');
+
+        $response->assertOk();
+
+        foreach ($featured->take(3) as $image) {
+            $response->assertSee($image->image_path, false);
+        }
+
+        $response->assertDontSee($featured->last()->image_path, false);
+    }
+
     public function test_landing_shows_feedback_empty_state_when_no_featured_images(): void
     {
         $response = $this->get('/');
@@ -207,6 +229,25 @@ class EnrollmentLandingPageTest extends TestCase
 
         $response->assertDontSee($nonFeatured->image_path, false);
         $response->assertDontSee($inactiveFeatured->image_path, false);
+    }
+
+    public function test_landing_caps_gallery_images_at_three_even_if_more_are_featured(): void
+    {
+        $featured = GalleryImage::factory()->featured()->count(4)->create();
+
+        foreach ($featured as $image) {
+            Storage::disk('dmf_s3')->put($image->image_path, 'fake-image');
+        }
+
+        $response = $this->get('/');
+
+        $response->assertOk();
+
+        foreach ($featured->take(3) as $image) {
+            $response->assertSee($image->image_path, false);
+        }
+
+        $response->assertDontSee($featured->last()->image_path, false);
     }
 
     public function test_landing_shows_gallery_empty_state_when_no_featured_images(): void

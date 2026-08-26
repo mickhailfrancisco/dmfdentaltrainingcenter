@@ -6,9 +6,11 @@ namespace Tests\Feature\Filament;
 
 use App\Filament\Resources\GalleryImageResource;
 use App\Filament\Resources\GalleryImageResource\Pages\CreateGalleryImage;
+use App\Filament\Resources\GalleryImageResource\Pages\EditGalleryImage;
 use App\Filament\Resources\GalleryImageResource\Pages\ListGalleryImages;
 use App\Models\GalleryImage;
 use App\Models\User;
+use App\Services\LandingMediaService;
 use Filament\Facades\Filament;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -81,6 +83,55 @@ class GalleryImageResourceTest extends TestCase
 
         $this->assertFalse($fourth->fresh()->is_featured);
         $this->assertSame(3, GalleryImage::query()->where('is_featured', true)->count());
+    }
+
+    public function test_list_page_displays_a_row_whose_object_is_missing_on_s3(): void
+    {
+        $admin = $this->makeAdmin();
+
+        // Gallery images have no legacy public-path fallback (unlike feedback images), so
+        // this simulates the "S3 object doesn't exist" scenario directly: a path that is
+        // never put on the faked dmf_s3 disk. This proves the ImageColumn's getStateUsing
+        // resolves through GalleryImage::imageUrl() -> LandingMediaService::url() without
+        // erroring or blanking out, even though Storage::disk('dmf_s3')->exists() is false.
+        $missingPath = 'landing/gallery/legacy-test.jpg';
+        $image = GalleryImage::factory()->create(['image_path' => $missingPath]);
+
+        Storage::disk('dmf_s3')->assertMissing($missingPath);
+
+        $expectedUrl = app(LandingMediaService::class)->url($missingPath);
+
+        $this->actingAs($admin);
+
+        Livewire::test(ListGalleryImages::class)
+            ->assertSuccessful()
+            ->assertCanSeeTableRecords([$image])
+            ->assertSee($expectedUrl, false);
+    }
+
+    public function test_editing_a_row_without_reuploading_preserves_the_path_when_object_is_missing_on_s3(): void
+    {
+        $admin = $this->makeAdmin();
+
+        $missingPath = 'landing/gallery/legacy-test.jpg';
+        $image = GalleryImage::factory()->create([
+            'image_path' => $missingPath,
+            'is_active' => true,
+        ]);
+
+        Storage::disk('dmf_s3')->assertMissing($missingPath);
+
+        $this->actingAs($admin);
+
+        Livewire::test(EditGalleryImage::class, ['record' => $image->getRouteKey()])
+            ->fillForm([
+                'is_active' => false,
+            ])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame($missingPath, $image->fresh()->image_path);
+        $this->assertFalse($image->fresh()->is_active);
     }
 
     public function test_assistant_cannot_access_gallery_image_resource(): void

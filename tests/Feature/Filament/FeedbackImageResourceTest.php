@@ -6,6 +6,7 @@ namespace Tests\Feature\Filament;
 
 use App\Filament\Resources\FeedbackImageResource;
 use App\Filament\Resources\FeedbackImageResource\Pages\CreateFeedbackImage;
+use App\Filament\Resources\FeedbackImageResource\Pages\EditFeedbackImage;
 use App\Filament\Resources\FeedbackImageResource\Pages\ListFeedbackImages;
 use App\Models\FeedbackImage;
 use App\Models\User;
@@ -98,6 +99,52 @@ class FeedbackImageResourceTest extends TestCase
         $this->assertFalse($featured->first()->fresh()->is_featured);
         $this->assertTrue($candidate->fresh()->is_featured);
         $this->assertSame(3, FeedbackImage::query()->where('is_featured', true)->count());
+    }
+
+    public function test_list_page_displays_a_legacy_public_path_image_not_present_on_s3(): void
+    {
+        $admin = $this->makeAdmin();
+
+        // 'Unknown-10.jpg' is one of the screenshots bundled under public/images/feedback,
+        // matching the shape of rows created by FeedbackImageSeeder. It is deliberately
+        // NOT put on the faked dmf_s3 disk, since a legacy row was never uploaded to S3 —
+        // Storage::disk('dmf_s3')->exists() for this path is false.
+        $legacyPath = 'images/feedback/Unknown-10.jpg';
+        $image = FeedbackImage::factory()->create(['image_path' => $legacyPath]);
+
+        Storage::disk('dmf_s3')->assertMissing($legacyPath);
+
+        $this->actingAs($admin);
+
+        Livewire::test(ListFeedbackImages::class)
+            ->assertSuccessful()
+            ->assertCanSeeTableRecords([$image])
+            ->assertSee(asset($legacyPath), false);
+    }
+
+    public function test_editing_a_legacy_path_row_without_reuploading_preserves_the_path(): void
+    {
+        $admin = $this->makeAdmin();
+
+        $legacyPath = 'images/feedback/Unknown-10.jpg';
+        $image = FeedbackImage::factory()->create([
+            'image_path' => $legacyPath,
+            'is_active' => true,
+        ]);
+
+        Storage::disk('dmf_s3')->assertMissing($legacyPath);
+
+        $this->actingAs($admin);
+
+        Livewire::test(EditFeedbackImage::class, ['record' => $image->getRouteKey()])
+            ->fillForm([
+                'is_active' => false,
+            ])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame($legacyPath, $image->fresh()->image_path);
+        $this->assertFalse($image->fresh()->is_active);
     }
 
     public function test_assistant_cannot_access_feedback_image_resource(): void
