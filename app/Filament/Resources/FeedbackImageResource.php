@@ -60,10 +60,6 @@ class FeedbackImageResource extends Resource
                 Tables\Columns\ToggleColumn::make('is_active')
                     ->label('Active'),
 
-                Tables\Columns\TextColumn::make('sort_order')
-                    ->label('Order')
-                    ->sortable(),
-
                 Tables\Columns\TextColumn::make('updated_at')
                     ->since()
                     ->label('Updated')
