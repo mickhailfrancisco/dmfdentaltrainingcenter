@@ -6,7 +6,6 @@ namespace Tests\Feature\Filament;
 
 use App\Filament\Resources\FeedbackImageResource;
 use App\Filament\Resources\FeedbackImageResource\Pages\CreateFeedbackImage;
-use App\Filament\Resources\FeedbackImageResource\Pages\EditFeedbackImage;
 use App\Filament\Resources\FeedbackImageResource\Pages\ListFeedbackImages;
 use App\Models\FeedbackImage;
 use App\Models\User;
@@ -204,31 +203,27 @@ class FeedbackImageResourceTest extends TestCase
         }
     }
 
-    public function test_editing_a_row_whose_object_is_missing_from_s3_requires_reuploading(): void
+    public function test_admin_can_preview_a_feedback_image_from_the_list_page(): void
     {
-        // Every row is now uploaded fresh through the admin, so a missing S3 object is a
-        // genuine anomaly rather than an expected legacy case — Filament's stock behavior
-        // (require a re-upload rather than silently preserving a broken reference) applies.
+        $image = FeedbackImage::factory()->create(['image_path' => 'landing/feedback/preview-test.jpg']);
+        Storage::disk('dmf_s3')->put($image->image_path, 'fake-image');
+
+        $html = FeedbackImageResource::previewImageModalView($image)->render();
+
+        $this->assertStringContainsString('landing/feedback/preview-test.jpg', $html);
+    }
+
+    public function test_admin_can_toggle_active_directly_from_the_list_page(): void
+    {
         $admin = $this->makeAdmin();
-
-        $missingPath = 'landing/feedback/missing.jpg';
-        $image = FeedbackImage::factory()->create([
-            'image_path' => $missingPath,
-            'is_active' => true,
-        ]);
-
-        Storage::disk('dmf_s3')->assertMissing($missingPath);
+        $image = FeedbackImage::factory()->create(['is_active' => true]);
 
         $this->actingAs($admin);
 
-        Livewire::test(EditFeedbackImage::class, ['record' => $image->getRouteKey()])
-            ->fillForm([
-                'is_active' => false,
-            ])
-            ->call('save')
-            ->assertHasErrors(['data.image_path']);
+        Livewire::test(ListFeedbackImages::class)
+            ->call('updateTableColumnState', 'is_active', $image->getKey(), false);
 
-        $this->assertTrue($image->fresh()->is_active);
+        $this->assertFalse($image->fresh()->is_active);
     }
 
     public function test_assistant_cannot_access_feedback_image_resource(): void

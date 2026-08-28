@@ -6,7 +6,6 @@ namespace Tests\Feature\Filament;
 
 use App\Filament\Resources\GalleryImageResource;
 use App\Filament\Resources\GalleryImageResource\Pages\CreateGalleryImage;
-use App\Filament\Resources\GalleryImageResource\Pages\EditGalleryImage;
 use App\Filament\Resources\GalleryImageResource\Pages\ListGalleryImages;
 use App\Models\GalleryImage;
 use App\Models\User;
@@ -182,31 +181,27 @@ class GalleryImageResourceTest extends TestCase
             ->assertSee($expectedUrl, false);
     }
 
-    public function test_editing_a_row_whose_object_is_missing_from_s3_requires_reuploading(): void
+    public function test_admin_can_preview_a_gallery_image_from_the_list_page(): void
     {
-        // Every row is now uploaded fresh through the admin, so a missing S3 object is a
-        // genuine anomaly rather than an expected legacy case — Filament's stock behavior
-        // (require a re-upload rather than silently preserving a broken reference) applies.
+        $image = GalleryImage::factory()->create(['image_path' => 'landing/gallery/preview-test.jpg']);
+        Storage::disk('dmf_s3')->put($image->image_path, 'fake-image');
+
+        $html = GalleryImageResource::previewImageModalView($image)->render();
+
+        $this->assertStringContainsString('landing/gallery/preview-test.jpg', $html);
+    }
+
+    public function test_admin_can_toggle_active_directly_from_the_list_page(): void
+    {
         $admin = $this->makeAdmin();
-
-        $missingPath = 'landing/gallery/missing.jpg';
-        $image = GalleryImage::factory()->create([
-            'image_path' => $missingPath,
-            'is_active' => true,
-        ]);
-
-        Storage::disk('dmf_s3')->assertMissing($missingPath);
+        $image = GalleryImage::factory()->create(['is_active' => true]);
 
         $this->actingAs($admin);
 
-        Livewire::test(EditGalleryImage::class, ['record' => $image->getRouteKey()])
-            ->fillForm([
-                'is_active' => false,
-            ])
-            ->call('save')
-            ->assertHasErrors(['data.image_path']);
+        Livewire::test(ListGalleryImages::class)
+            ->call('updateTableColumnState', 'is_active', $image->getKey(), false);
 
-        $this->assertTrue($image->fresh()->is_active);
+        $this->assertFalse($image->fresh()->is_active);
     }
 
     public function test_assistant_cannot_access_gallery_image_resource(): void

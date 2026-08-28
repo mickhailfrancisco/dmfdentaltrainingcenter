@@ -6,13 +6,11 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\FeedbackImageResource\Pages;
 use App\Models\FeedbackImage;
-use App\Services\LandingMediaService;
-use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
@@ -40,38 +38,9 @@ class FeedbackImageResource extends Resource
         return Auth::user()?->isAdmin() ?? false;
     }
 
-    public static function canEdit(Model $record): bool
-    {
-        return Auth::user()?->isAdmin() ?? false;
-    }
-
     public static function canDelete(Model $record): bool
     {
         return Auth::user()?->isAdmin() ?? false;
-    }
-
-    public static function form(Form $form): Form
-    {
-        $service = app(LandingMediaService::class);
-
-        return $form->schema([
-            Forms\Components\FileUpload::make('image_path')
-                ->label('Image')
-                ->image()
-                ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
-                ->imagePreviewHeight('150')
-                ->disk($service->disk())
-                ->directory($service->feedbackDirectory())
-                ->visibility($service->uploadVisibility())
-                ->maxSize(5120)
-                ->required()
-                ->moveFiles()
-                ->columnSpanFull(),
-
-            Forms\Components\Toggle::make('is_active')
-                ->label('Active')
-                ->default(true),
-        ]);
     }
 
     public static function table(Table $table): Table
@@ -88,9 +57,8 @@ class FeedbackImageResource extends Resource
                     ->label('Featured')
                     ->boolean(),
 
-                Tables\Columns\IconColumn::make('is_active')
-                    ->label('Active')
-                    ->boolean(),
+                Tables\Columns\ToggleColumn::make('is_active')
+                    ->label('Active'),
 
                 Tables\Columns\TextColumn::make('sort_order')
                     ->label('Order')
@@ -103,8 +71,18 @@ class FeedbackImageResource extends Resource
             ])
             ->defaultSort('sort_order')
             ->actions([
+                Tables\Actions\Action::make('previewImage')
+                    ->iconButton()
+                    ->icon('heroicon-o-magnifying-glass-plus')
+                    ->tooltip('Preview image')
+                    ->modalHeading('Preview image')
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Close')
+                    ->modalWidth('2xl')
+                    ->modalContent(fn (FeedbackImage $record): View => static::previewImageModalView($record)),
                 Tables\Actions\Action::make('toggleFeatured')
-                    ->label(fn (FeedbackImage $record): string => $record->is_featured ? 'Unfeature' : 'Feature')
+                    ->iconButton()
+                    ->tooltip(fn (FeedbackImage $record): string => $record->is_featured ? 'Unfeature' : 'Feature')
                     ->icon('heroicon-o-star')
                     ->color(fn (FeedbackImage $record): string => $record->is_featured ? 'warning' : 'gray')
                     ->action(function (FeedbackImage $record): void {
@@ -120,8 +98,9 @@ class FeedbackImageResource extends Resource
 
                         $record->update(['is_featured' => ! $record->is_featured]);
                     }),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->iconButton()
+                    ->tooltip('Delete'),
             ])
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make(),
@@ -133,7 +112,13 @@ class FeedbackImageResource extends Resource
         return [
             'index' => Pages\ListFeedbackImages::route('/'),
             'create' => Pages\CreateFeedbackImage::route('/create'),
-            'edit' => Pages\EditFeedbackImage::route('/{record}/edit'),
         ];
+    }
+
+    public static function previewImageModalView(FeedbackImage $record): View
+    {
+        return view('filament.modals.image-preview', [
+            'imageUrl' => $record->imageUrl(),
+        ]);
     }
 }
