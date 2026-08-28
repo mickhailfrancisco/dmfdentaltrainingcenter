@@ -27,6 +27,7 @@ class CreateFeedbackImage extends CreateRecord
                 ->helperText('Upload one or more images. Each becomes its own feedback image.')
                 ->image()
                 ->multiple()
+                ->maxParallelUploads(1)
                 ->panelLayout('grid')
                 ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
                 ->imagePreviewHeight('150')

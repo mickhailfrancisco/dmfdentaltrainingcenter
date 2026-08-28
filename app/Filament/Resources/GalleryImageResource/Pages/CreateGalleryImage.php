@@ -27,6 +27,7 @@ class CreateGalleryImage extends CreateRecord
                 ->helperText('Upload one or more images. Each becomes its own gallery image.')
                 ->image()
                 ->multiple()
+                ->maxParallelUploads(1)
                 ->panelLayout('grid')
                 ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
                 ->imagePreviewHeight('150')
