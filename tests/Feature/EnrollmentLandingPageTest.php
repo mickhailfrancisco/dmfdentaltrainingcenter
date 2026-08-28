@@ -179,7 +179,7 @@ class EnrollmentLandingPageTest extends TestCase
         $response = $this->get('/');
 
         $response->assertOk();
-        $response->assertSee('What Our Graduates Say');
+        $response->assertSee('Feedback');
         $response->assertSee('feedback-gallery-item', false);
         $response->assertSee(route('feedback'), false);
         $response->assertSee('See more feedback');
