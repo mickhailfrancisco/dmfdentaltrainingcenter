@@ -86,19 +86,21 @@
             <div class="absolute inset-0 bg-brand-950/85 backdrop-blur-sm" @click="closeLightbox()"></div>
 
             <div class="relative z-10 flex w-full max-w-4xl flex-col items-center" @click.stop>
-                <div class="mb-3 flex w-full items-center justify-between gap-3 px-1">
-                    <p class="text-xs font-semibold text-white/80" x-text="(activeIndex + 1) + ' / ' + images.length"></p>
+                <div class="relative flex w-full items-center justify-center min-h-[40vh]">
+                    <p
+                        class="absolute top-2 left-2 sm:top-3 sm:left-3 z-20 rounded-full bg-brand-950/70 px-2.5 py-1 text-xs font-semibold text-white"
+                        x-text="(activeIndex + 1) + ' / ' + images.length"
+                    ></p>
+
                     <button
                         type="button"
-                        class="w-10 h-10 rounded-full bg-white text-brand-900 shadow-md flex items-center justify-center hover:bg-accent-500 transition-colors"
+                        class="absolute top-2 right-2 sm:top-3 sm:right-3 z-20 w-10 h-10 rounded-full bg-white text-brand-900 shadow-md flex items-center justify-center hover:bg-accent-500 transition-colors"
                         @click="closeLightbox()"
                         aria-label="Close"
                     >
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
-                </div>
 
-                <div class="relative flex w-full items-center justify-center min-h-[40vh]">
                     <button
                         type="button"
                         class="absolute left-0 sm:-left-3 z-20 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white text-brand-900 shadow-md flex items-center justify-center hover:bg-accent-500 transition-colors"
