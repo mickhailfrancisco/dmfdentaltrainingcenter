@@ -31,6 +31,7 @@ class LandingMediaPagesTest extends TestCase
         $response->assertOk();
         $response->assertSee('landing/feedback/active.jpg', false);
         $response->assertDontSee('landing/feedback/inactive.jpg', false);
+        $response->assertSee('x-teleport="body"', false);
         $this->assertTrue($active->exists);
     }
 
@@ -54,6 +55,7 @@ class LandingMediaPagesTest extends TestCase
         $response->assertOk();
         $response->assertSee('landing/gallery/active.jpg', false);
         $response->assertDontSee('landing/gallery/inactive.jpg', false);
+        $response->assertSee('x-teleport="body"', false);
     }
 
     public function test_gallery_page_shows_empty_state_when_no_images(): void

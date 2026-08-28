@@ -10,6 +10,8 @@ use App\Models\FeedbackImage;
 use App\Services\LandingMediaService;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
+use Filament\Support\Exceptions\Halt;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
@@ -33,7 +35,11 @@ class CreateFeedbackImage extends CreateRecord
                 ->helperText('Upload up to '.self::MAX_FILES_PER_SUBMISSION.' images at a time. Each becomes its own feedback image.')
                 ->image()
                 ->multiple()
-                ->maxFiles(self::MAX_FILES_PER_SUBMISSION)
+                // Deliberately not ->maxFiles(): Filament wires that to FilePond's own
+                // client-side cap too, which silently blocks a 7th file with zero visible
+                // feedback in this panel layout, and FileUpload's own validation-rule
+                // override ignores ->rules() entirely. The cap is enforced, with a real
+                // visible error, in handleRecordCreation() below instead.
                 ->maxParallelUploads(1)
                 ->panelLayout('grid')
                 ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
@@ -60,6 +66,18 @@ class CreateFeedbackImage extends CreateRecord
     protected function handleRecordCreation(array $data): Model
     {
         $paths = Collection::wrap($data['image_path']);
+
+        if ($paths->count() > self::MAX_FILES_PER_SUBMISSION) {
+            $paths->each(fn (string $path) => app(LandingMediaService::class)->deleteAsset($path));
+
+            Notification::make()
+                ->danger()
+                ->title('Too many images')
+                ->body('Upload at most '.self::MAX_FILES_PER_SUBMISSION.' images per submission — try again with fewer.')
+                ->send();
+
+            throw new Halt;
+        }
 
         $records = $paths->map(fn (string $path): FeedbackImage => FeedbackImage::create([
             'image_path' => $path,

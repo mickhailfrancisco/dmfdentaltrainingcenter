@@ -240,6 +240,8 @@ class EnrollmentLandingPageTest extends TestCase
         $response->assertSee('Inside DMF Dental Review Center');
         $response->assertSee(route('gallery'), false);
         $response->assertSee('View full gallery');
+        $response->assertSee('Enlarged gallery photo', false);
+        $response->assertSee('aria-label="Gallery photo"', false);
 
         foreach ($featured as $image) {
             $response->assertSee($image->image_path, false);

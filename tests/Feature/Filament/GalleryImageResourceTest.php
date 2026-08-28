@@ -111,11 +111,15 @@ class GalleryImageResourceTest extends TestCase
         $this->actingAs($admin);
 
         Livewire::test(CreateGalleryImage::class)
-            ->fillForm(['image_path' => $uploads])
+            ->fillForm([
+                'image_path' => $uploads,
+                'is_active' => true,
+            ])
             ->call('create')
-            ->assertHasFormErrors(['image_path']);
+            ->assertNotified();
 
         $this->assertSame(0, GalleryImage::query()->count());
+        $this->assertEmpty(Storage::disk('dmf_s3')->allFiles('landing/gallery'));
     }
 
     public function test_uploading_exactly_six_images_at_once_succeeds(): void
@@ -178,11 +182,14 @@ class GalleryImageResourceTest extends TestCase
             ->assertSee($expectedUrl, false);
     }
 
-    public function test_editing_a_row_without_reuploading_preserves_the_path_when_object_is_missing_on_s3(): void
+    public function test_editing_a_row_whose_object_is_missing_from_s3_requires_reuploading(): void
     {
+        // Every row is now uploaded fresh through the admin, so a missing S3 object is a
+        // genuine anomaly rather than an expected legacy case — Filament's stock behavior
+        // (require a re-upload rather than silently preserving a broken reference) applies.
         $admin = $this->makeAdmin();
 
-        $missingPath = 'landing/gallery/legacy-test.jpg';
+        $missingPath = 'landing/gallery/missing.jpg';
         $image = GalleryImage::factory()->create([
             'image_path' => $missingPath,
             'is_active' => true,
@@ -197,10 +204,9 @@ class GalleryImageResourceTest extends TestCase
                 'is_active' => false,
             ])
             ->call('save')
-            ->assertHasNoFormErrors();
+            ->assertHasErrors(['data.image_path']);
 
-        $this->assertSame($missingPath, $image->fresh()->image_path);
-        $this->assertFalse($image->fresh()->is_active);
+        $this->assertTrue($image->fresh()->is_active);
     }
 
     public function test_assistant_cannot_access_gallery_image_resource(): void
