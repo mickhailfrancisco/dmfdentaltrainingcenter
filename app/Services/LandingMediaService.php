@@ -76,6 +76,46 @@ class LandingMediaService
     }
 
     /**
+     * Guess an image's MIME type from its file extension, without touching storage.
+     * Used to avoid a live Storage::mimeType() call that Filament's file upload preview
+     * would otherwise wait on (and, for a private/unreachable disk, hang on indefinitely).
+     */
+    public function guessMimeType(string $path): string
+    {
+        $extension = strtolower((string) pathinfo($path, PATHINFO_EXTENSION));
+
+        return match ($extension) {
+            'jpg', 'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'webp' => 'image/webp',
+            default => 'application/octet-stream',
+        };
+    }
+
+    /**
+     * Build the metadata Filament's FileUpload component needs to display an already-stored
+     * file, without calling Storage::exists()/size()/mimeType() — those calls are what filter
+     * out legacy/missing-on-disk rows during hydration, and what forces the upload widget to
+     * fetch the raw file itself (hanging on a private, CORS-unconfigured, or slow disk).
+     *
+     * @param  string|array<string, string>|null  $storedFileNames
+     * @return array{name: string, size: int, type: string, url: ?string}
+     */
+    public function uploadedFileMetadata(string $path, string|array|null $storedFileNames, bool $isMultiple): array
+    {
+        $name = $isMultiple
+            ? ($storedFileNames[$path] ?? null)
+            : $storedFileNames;
+
+        return [
+            'name' => $name ?? basename($path),
+            'size' => 0,
+            'type' => $this->guessMimeType($path),
+            'url' => $this->url($path),
+        ];
+    }
+
+    /**
      * Delete a stored image from the configured disk. Legacy bundled repo assets are left alone.
      */
     public function deleteAsset(?string $path): void

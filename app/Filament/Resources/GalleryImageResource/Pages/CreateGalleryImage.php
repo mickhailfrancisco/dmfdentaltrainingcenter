@@ -27,6 +27,8 @@ class CreateGalleryImage extends CreateRecord
                 ->helperText('Upload one or more images. Each becomes its own gallery image.')
                 ->image()
                 ->multiple()
+                ->previewable(false)
+                ->maxParallelUploads(1)
                 ->panelLayout('grid')
                 ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
                 ->imagePreviewHeight('150')
@@ -37,6 +39,7 @@ class CreateGalleryImage extends CreateRecord
                 ->required()
                 ->moveFiles()
                 ->fetchFileInformation(false)
+                ->getUploadedFileUsing(fn (Forms\Components\FileUpload $component, string $file, string|array|null $storedFileNames): array => $service->uploadedFileMetadata($file, $storedFileNames, $component->isMultiple()))
                 ->columnSpanFull(),
 
             Forms\Components\Toggle::make('is_active')
@@ -58,5 +61,14 @@ class CreateGalleryImage extends CreateRecord
         ]));
 
         return $records->last();
+    }
+
+    /**
+     * One submission can create several records — redirect to the list instead of
+     * Filament's default single-record Edit page, which only shows the last one.
+     */
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
     }
 }

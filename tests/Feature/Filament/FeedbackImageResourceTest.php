@@ -87,7 +87,8 @@ class FeedbackImageResourceTest extends TestCase
                 'is_active' => true,
             ])
             ->call('create')
-            ->assertHasNoFormErrors();
+            ->assertHasNoFormErrors()
+            ->assertRedirect(FeedbackImageResource::getUrl('index'));
 
         $this->assertSame(3, FeedbackImage::query()->count());
 

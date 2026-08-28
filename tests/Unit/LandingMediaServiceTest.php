@@ -142,4 +142,52 @@ class LandingMediaServiceTest extends TestCase
 
         $this->assertTrue(true);
     }
+
+    public function test_guess_mime_type_maps_common_image_extensions(): void
+    {
+        $service = new LandingMediaService;
+
+        $this->assertSame('image/jpeg', $service->guessMimeType('landing/feedback/a.jpg'));
+        $this->assertSame('image/jpeg', $service->guessMimeType('landing/feedback/a.JPEG'));
+        $this->assertSame('image/png', $service->guessMimeType('landing/feedback/a.png'));
+        $this->assertSame('image/webp', $service->guessMimeType('landing/feedback/a.webp'));
+        $this->assertSame('application/octet-stream', $service->guessMimeType('landing/feedback/a.unknown'));
+    }
+
+    public function test_uploaded_file_metadata_resolves_name_type_size_and_url_without_touching_storage(): void
+    {
+        $service = new LandingMediaService;
+
+        // Deliberately never put on the faked disk — resolving this metadata must never
+        // call Storage::exists()/size()/mimeType(), which is what hangs Filament's file
+        // upload preview when the object is missing or the disk is slow/unreachable.
+        $metadata = $service->uploadedFileMetadata('landing/feedback/photo.jpg', 'custom-name.jpg', false);
+
+        $this->assertSame('custom-name.jpg', $metadata['name']);
+        $this->assertSame('image/jpeg', $metadata['type']);
+        $this->assertSame(0, $metadata['size']);
+        $this->assertStringContainsString('landing/feedback/photo.jpg', (string) $metadata['url']);
+    }
+
+    public function test_uploaded_file_metadata_falls_back_to_basename_when_no_name_given(): void
+    {
+        $service = new LandingMediaService;
+
+        $metadata = $service->uploadedFileMetadata('landing/feedback/photo.jpg', null, false);
+
+        $this->assertSame('photo.jpg', $metadata['name']);
+    }
+
+    public function test_uploaded_file_metadata_resolves_name_from_array_when_multiple(): void
+    {
+        $service = new LandingMediaService;
+
+        $metadata = $service->uploadedFileMetadata(
+            'landing/feedback/photo.jpg',
+            ['landing/feedback/photo.jpg' => 'array-name.jpg'],
+            true,
+        );
+
+        $this->assertSame('array-name.jpg', $metadata['name']);
+    }
 }

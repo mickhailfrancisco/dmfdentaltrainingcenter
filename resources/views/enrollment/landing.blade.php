@@ -91,7 +91,7 @@
                         <span class="w-10 h-10 rounded-2xl bg-brand-50 text-brand-700 flex items-center justify-center shadow-sm flex-shrink-0">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 2v3M16 2v3M3 8h18M5 5h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/></svg>
                         </span>
-                        <p class="text-sm font-extrabold text-brand-700 leading-snug">10 years of excellence</p>
+                        <p class="text-sm font-extrabold text-brand-700 leading-snug">{{ $yearsOfExcellence }} years of excellence</p>
                     </div>
 
                     {{-- Topnotch lecturers --}}

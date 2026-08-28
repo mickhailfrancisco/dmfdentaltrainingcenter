@@ -6,6 +6,8 @@ namespace Tests\Feature;
 
 use App\Models\FeedbackImage;
 use App\Models\GalleryImage;
+use App\Support\YearsOfExcellence;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -17,6 +19,13 @@ class EnrollmentLandingPageTest extends TestCase
 
         Storage::fake('dmf_s3');
         config(['landing-media.disk' => 'dmf_s3']);
+    }
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+
+        parent::tearDown();
     }
 
     public function test_landing_includes_scroll_animation_markup_for_js(): void
@@ -37,11 +46,20 @@ class EnrollmentLandingPageTest extends TestCase
         $response->assertSee('Excellent board performance');
         $response->assertSee('High passing rate');
         $response->assertSee('Multiple topnotchers');
-        $response->assertSee('10 years of excellence');
+        $response->assertSee(YearsOfExcellence::asOf(now()).' years of excellence');
         $response->assertSee('Topnotch lecturers');
         $response->assertSee('Highly recommended by previous board takers');
         $response->assertDontSee('National Passing Rate');
         $response->assertDontSee('Satisfaction Guarantee');
+    }
+
+    public function test_landing_years_of_excellence_increments_on_february_first(): void
+    {
+        Carbon::setTestNow('2026-01-31');
+        $this->get('/')->assertSee('9 years of excellence');
+
+        Carbon::setTestNow('2026-02-01');
+        $this->get('/')->assertSee('10 years of excellence');
     }
 
     public function test_landing_hero_shows_2027_enrollment_badge_without_graduates_social_proof(): void
