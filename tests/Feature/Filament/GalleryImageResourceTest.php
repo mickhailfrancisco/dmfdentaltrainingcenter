@@ -111,11 +111,15 @@ class GalleryImageResourceTest extends TestCase
         $this->actingAs($admin);
 
         Livewire::test(CreateGalleryImage::class)
-            ->fillForm(['image_path' => $uploads])
+            ->fillForm([
+                'image_path' => $uploads,
+                'is_active' => true,
+            ])
             ->call('create')
-            ->assertHasFormErrors(['image_path']);
+            ->assertNotified();
 
         $this->assertSame(0, GalleryImage::query()->count());
+        $this->assertEmpty(Storage::disk('dmf_s3')->allFiles('landing/gallery'));
     }
 
     public function test_uploading_exactly_six_images_at_once_succeeds(): void
