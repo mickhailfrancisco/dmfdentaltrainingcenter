@@ -100,6 +100,45 @@ class GalleryImageResourceTest extends TestCase
         });
     }
 
+    public function test_uploading_more_than_six_images_at_once_is_rejected(): void
+    {
+        $admin = $this->makeAdmin();
+        $uploads = array_map(
+            fn (int $index): UploadedFile => UploadedFile::fake()->image("gallery-{$index}.jpg"),
+            range(1, 7),
+        );
+
+        $this->actingAs($admin);
+
+        Livewire::test(CreateGalleryImage::class)
+            ->fillForm(['image_path' => $uploads])
+            ->call('create')
+            ->assertHasFormErrors(['image_path']);
+
+        $this->assertSame(0, GalleryImage::query()->count());
+    }
+
+    public function test_uploading_exactly_six_images_at_once_succeeds(): void
+    {
+        $admin = $this->makeAdmin();
+        $uploads = array_map(
+            fn (int $index): UploadedFile => UploadedFile::fake()->image("gallery-{$index}.jpg"),
+            range(1, 6),
+        );
+
+        $this->actingAs($admin);
+
+        Livewire::test(CreateGalleryImage::class)
+            ->fillForm([
+                'image_path' => $uploads,
+                'is_active' => true,
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(6, GalleryImage::query()->count());
+    }
+
     public function test_featuring_a_fourth_image_is_rejected(): void
     {
         $admin = $this->makeAdmin();

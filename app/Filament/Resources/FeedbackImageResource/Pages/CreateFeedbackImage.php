@@ -17,6 +17,12 @@ class CreateFeedbackImage extends CreateRecord
 {
     protected static string $resource = FeedbackImageResource::class;
 
+    /**
+     * Each image is uploaded to S3 synchronously when the form is submitted. A batch
+     * much larger than this risks the request exceeding the server's gateway timeout.
+     */
+    private const MAX_FILES_PER_SUBMISSION = 6;
+
     public function form(Form $form): Form
     {
         $service = app(LandingMediaService::class);
@@ -24,9 +30,10 @@ class CreateFeedbackImage extends CreateRecord
         return $form->schema([
             Forms\Components\FileUpload::make('image_path')
                 ->label('Images')
-                ->helperText('Upload one or more images. Each becomes its own feedback image.')
+                ->helperText('Upload up to '.self::MAX_FILES_PER_SUBMISSION.' images at a time. Each becomes its own feedback image.')
                 ->image()
                 ->multiple()
+                ->maxFiles(self::MAX_FILES_PER_SUBMISSION)
                 ->maxParallelUploads(1)
                 ->panelLayout('grid')
                 ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
