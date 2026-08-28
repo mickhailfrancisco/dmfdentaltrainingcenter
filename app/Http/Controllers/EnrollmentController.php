@@ -17,6 +17,7 @@ use App\Services\EnrollmentService;
 use App\Services\EnrollmentSuccessService;
 use App\Services\PaymongoService;
 use App\Support\Filament\CatalogOptionsCache;
+use App\Support\YearsOfExcellence;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -37,6 +38,7 @@ class EnrollmentController extends Controller
     public function landing()
     {
         $packages = CatalogOptionsCache::landingPagePackages();
+        $yearsOfExcellence = YearsOfExcellence::asOf(now());
 
         $feedbackImages = FeedbackImage::query()
             ->where('is_active', true)
@@ -62,7 +64,7 @@ class EnrollmentController extends Controller
             ->values()
             ->all();
 
-        return view('enrollment.landing', compact('packages', 'feedbackImages', 'galleryImages'));
+        return view('enrollment.landing', compact('packages', 'yearsOfExcellence', 'feedbackImages', 'galleryImages'));
     }
 
     /**
