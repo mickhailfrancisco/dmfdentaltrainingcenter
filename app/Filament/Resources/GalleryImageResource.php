@@ -58,6 +58,7 @@ class GalleryImageResource extends Resource
             Forms\Components\FileUpload::make('image_path')
                 ->label('Image')
                 ->image()
+                ->previewable(false)
                 ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
                 ->imagePreviewHeight('150')
                 ->disk($service->disk())
@@ -67,6 +68,7 @@ class GalleryImageResource extends Resource
                 ->required()
                 ->moveFiles()
                 ->fetchFileInformation(false)
+                ->getUploadedFileUsing(fn (Forms\Components\FileUpload $component, string $file, string|array|null $storedFileNames): array => $service->uploadedFileMetadata($file, $storedFileNames, $component->isMultiple()))
                 ->columnSpanFull(),
 
             Forms\Components\Toggle::make('is_active')

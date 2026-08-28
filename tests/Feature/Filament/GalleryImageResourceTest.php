@@ -87,7 +87,8 @@ class GalleryImageResourceTest extends TestCase
                 'is_active' => true,
             ])
             ->call('create')
-            ->assertHasNoFormErrors();
+            ->assertHasNoFormErrors()
+            ->assertRedirect(GalleryImageResource::getUrl('index'));
 
         $this->assertSame(3, GalleryImage::query()->count());
 
