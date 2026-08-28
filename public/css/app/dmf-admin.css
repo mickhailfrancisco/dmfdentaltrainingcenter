@@ -710,3 +710,12 @@ aside.fi-sidebar {
     border: 1px solid rgb(229 231 235);
     border-radius: 0.5rem;
 }
+
+/* ---- File upload: hide the raw <input type="file"> flash before FilePond boots ----
+   Filament renders a native file input server-side, then JS (FilePond) enhances it
+   into the styled dropzone on page load. Until that JS runs, the unstyled native
+   control is briefly visible. FilePond only needs a DOM reference to it — it never
+   needs to be visibly displayed — so hide it immediately instead of waiting on JS. */
+.fi-fo-file-upload input[type="file"] {
+    display: none;
+}
