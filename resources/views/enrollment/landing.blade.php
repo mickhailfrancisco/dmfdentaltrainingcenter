@@ -439,8 +439,8 @@
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="land-reveal text-center mb-10 md:mb-12">
             <span class="text-sm font-semibold uppercase tracking-widest text-brand-600">Success Stories</span>
-            <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight text-gray-900 mt-2">What Our Graduates Say</h2>
-            <p class="text-base text-gray-500 mt-3 max-w-2xl mx-auto">Real Facebook feedback from students and board passers. Tap a card to read it clearly.</p>
+            <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight text-gray-900 mt-2">Feedback</h2>
+            <p class="text-base text-gray-500 mt-3 max-w-2xl mx-auto">Success stories of our topnotchers and passers</p>
         </div>
 
         @if($feedbackTotal > 0)
@@ -584,8 +584,8 @@
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="land-reveal text-center mb-10 md:mb-12">
             <span class="text-sm font-semibold uppercase tracking-widest text-brand-600">Gallery</span>
-            <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight text-gray-900 mt-2">Inside DMF Dental Review Center</h2>
-            <p class="text-base text-gray-500 mt-3 max-w-2xl mx-auto">A look at our facilities, training sessions, and student life.</p>
+            <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight text-gray-900 mt-2">Inside DMF Dental Training Center</h2>
+            <p class="text-base text-gray-500 mt-3 max-w-2xl mx-auto">A glimpse of us - our lecturers, students and facilities</p>
         </div>
 
         @if($galleryTotal > 0)

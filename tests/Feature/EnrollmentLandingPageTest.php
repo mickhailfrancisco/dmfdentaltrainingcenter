@@ -179,7 +179,7 @@ class EnrollmentLandingPageTest extends TestCase
         $response = $this->get('/');
 
         $response->assertOk();
-        $response->assertSee('What Our Graduates Say');
+        $response->assertSee('Feedback');
         $response->assertSee('feedback-gallery-item', false);
         $response->assertSee(route('feedback'), false);
         $response->assertSee('See more feedback');
@@ -237,7 +237,7 @@ class EnrollmentLandingPageTest extends TestCase
         $response = $this->get('/');
 
         $response->assertOk();
-        $response->assertSee('Inside DMF Dental Review Center');
+        $response->assertSee('Inside DMF Dental Training Center');
         $response->assertSee(route('gallery'), false);
         $response->assertSee('View full gallery');
         $response->assertSee('Enlarged gallery photo', false);
