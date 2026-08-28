@@ -37,8 +37,8 @@
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-10 md:mb-12">
             <a href="{{ route('home') }}" class="text-sm font-semibold text-brand-600 hover:text-brand-800">&larr; Back to home</a>
-            <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-gray-900 mt-4">Student Feedback</h1>
-            <p class="text-base text-gray-500 mt-3 max-w-2xl mx-auto">Real Facebook feedback from students and board passers.</p>
+            <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-gray-900 mt-4">Feedback</h1>
+            <p class="text-base text-gray-500 mt-3 max-w-2xl mx-auto">Success stories of our topnotchers and passers</p>
         </div>
 
         @if($images->isEmpty())

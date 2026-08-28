@@ -37,8 +37,8 @@
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-10 md:mb-12">
             <a href="{{ route('home') }}" class="text-sm font-semibold text-brand-600 hover:text-brand-800">&larr; Back to home</a>
-            <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-gray-900 mt-4">Gallery</h1>
-            <p class="text-base text-gray-500 mt-3 max-w-2xl mx-auto">A look at our facilities, training sessions, and student life.</p>
+            <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-gray-900 mt-4">Inside DMF Dental Training Center</h1>
+            <p class="text-base text-gray-500 mt-3 max-w-2xl mx-auto">A glimpse of us - our lecturers, students and facilities</p>
         </div>
 
         @if($images->isEmpty())
