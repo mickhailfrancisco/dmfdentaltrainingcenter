@@ -11,6 +11,7 @@ use App\Models\GalleryImage;
 use App\Models\User;
 use App\Services\LandingMediaService;
 use Filament\Facades\Filament;
+use Filament\Support\Exceptions\Halt;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
@@ -155,6 +156,58 @@ class GalleryImageResourceTest extends TestCase
 
         $this->assertFalse($fourth->fresh()->is_featured);
         $this->assertSame(3, GalleryImage::query()->where('is_featured', true)->count());
+    }
+
+    public function test_only_successfully_uploaded_images_are_saved_when_one_upload_silently_fails(): void
+    {
+        // Simulates moveFiles() "succeeding" from Filament's perspective (it has a path
+        // string) while the actual S3 write silently failed — e.g. a transient error
+        // swallowed by the dmf_s3 disk's 'throw' => false config. 'ok-1'/'ok-2' are put
+        // on the fake disk directly (as if their uploads genuinely landed); 'missing' is
+        // deliberately never put there.
+        $admin = $this->makeAdmin();
+        $this->actingAs($admin);
+
+        Storage::disk('dmf_s3')->put('landing/gallery/ok-1.jpg', 'fake-image');
+        Storage::disk('dmf_s3')->put('landing/gallery/ok-2.jpg', 'fake-image');
+
+        $component = Livewire::test(CreateGalleryImage::class);
+
+        $method = new \ReflectionMethod($component->instance(), 'handleRecordCreation');
+        $method->setAccessible(true);
+
+        $method->invoke($component->instance(), [
+            'image_path' => ['landing/gallery/ok-1.jpg', 'landing/gallery/missing.jpg', 'landing/gallery/ok-2.jpg'],
+            'is_active' => true,
+        ]);
+
+        $this->assertSame(2, GalleryImage::query()->count());
+        $this->assertDatabaseMissing('gallery_images', ['image_path' => 'landing/gallery/missing.jpg']);
+        $component->assertNotified();
+    }
+
+    public function test_no_records_are_created_when_every_upload_silently_fails(): void
+    {
+        $admin = $this->makeAdmin();
+        $this->actingAs($admin);
+
+        $component = Livewire::test(CreateGalleryImage::class);
+
+        $method = new \ReflectionMethod($component->instance(), 'handleRecordCreation');
+        $method->setAccessible(true);
+
+        try {
+            $method->invoke($component->instance(), [
+                'image_path' => ['landing/gallery/missing-1.jpg', 'landing/gallery/missing-2.jpg'],
+                'is_active' => true,
+            ]);
+            $this->fail('Expected a Halt exception to be thrown.');
+        } catch (Halt) {
+            // expected — matches the existing over-limit rejection pattern.
+        }
+
+        $this->assertSame(0, GalleryImage::query()->count());
+        $component->assertNotified();
     }
 
     public function test_list_page_displays_a_row_whose_object_is_missing_on_s3(): void

@@ -190,4 +190,30 @@ class LandingMediaServiceTest extends TestCase
 
         $this->assertSame('array-name.jpg', $metadata['name']);
     }
+
+    public function test_exists_on_disk_is_true_for_a_stored_path(): void
+    {
+        Storage::disk('dmf_s3')->put('landing/feedback/real.jpg', 'fake-image');
+
+        $service = new LandingMediaService;
+
+        $this->assertTrue($service->existsOnDisk('landing/feedback/real.jpg'));
+    }
+
+    public function test_exists_on_disk_is_false_for_a_path_never_stored(): void
+    {
+        // Simulates a moveFiles()/storeAs() call that silently failed (e.g. a transient
+        // S3 error swallowed by the dmf_s3 disk's 'throw' => false config) — the path
+        // Filament thinks it wrote to was never actually created on the disk.
+        $service = new LandingMediaService;
+
+        $this->assertFalse($service->existsOnDisk('landing/feedback/never-uploaded.jpg'));
+    }
+
+    public function test_exists_on_disk_is_false_for_a_blank_path(): void
+    {
+        $service = new LandingMediaService;
+
+        $this->assertFalse($service->existsOnDisk(''));
+    }
 }

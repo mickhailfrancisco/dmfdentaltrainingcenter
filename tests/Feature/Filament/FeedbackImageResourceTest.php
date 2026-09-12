@@ -10,6 +10,7 @@ use App\Filament\Resources\FeedbackImageResource\Pages\ListFeedbackImages;
 use App\Models\FeedbackImage;
 use App\Models\User;
 use Filament\Facades\Filament;
+use Filament\Support\Exceptions\Halt;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
@@ -201,6 +202,58 @@ class FeedbackImageResourceTest extends TestCase
         } finally {
             @unlink(public_path($legacyPath));
         }
+    }
+
+    public function test_only_successfully_uploaded_images_are_saved_when_one_upload_silently_fails(): void
+    {
+        // Simulates moveFiles() "succeeding" from Filament's perspective (it has a path
+        // string) while the actual S3 write silently failed — e.g. a transient error
+        // swallowed by the dmf_s3 disk's 'throw' => false config. 'ok-1'/'ok-2' are put
+        // on the fake disk directly (as if their uploads genuinely landed); 'missing' is
+        // deliberately never put there.
+        $admin = $this->makeAdmin();
+        $this->actingAs($admin);
+
+        Storage::disk('dmf_s3')->put('landing/feedback/ok-1.jpg', 'fake-image');
+        Storage::disk('dmf_s3')->put('landing/feedback/ok-2.jpg', 'fake-image');
+
+        $component = Livewire::test(CreateFeedbackImage::class);
+
+        $method = new \ReflectionMethod($component->instance(), 'handleRecordCreation');
+        $method->setAccessible(true);
+
+        $method->invoke($component->instance(), [
+            'image_path' => ['landing/feedback/ok-1.jpg', 'landing/feedback/missing.jpg', 'landing/feedback/ok-2.jpg'],
+            'is_active' => true,
+        ]);
+
+        $this->assertSame(2, FeedbackImage::query()->count());
+        $this->assertDatabaseMissing('feedback_images', ['image_path' => 'landing/feedback/missing.jpg']);
+        $component->assertNotified();
+    }
+
+    public function test_no_records_are_created_when_every_upload_silently_fails(): void
+    {
+        $admin = $this->makeAdmin();
+        $this->actingAs($admin);
+
+        $component = Livewire::test(CreateFeedbackImage::class);
+
+        $method = new \ReflectionMethod($component->instance(), 'handleRecordCreation');
+        $method->setAccessible(true);
+
+        try {
+            $method->invoke($component->instance(), [
+                'image_path' => ['landing/feedback/missing-1.jpg', 'landing/feedback/missing-2.jpg'],
+                'is_active' => true,
+            ]);
+            $this->fail('Expected a Halt exception to be thrown.');
+        } catch (Halt) {
+            // expected — matches the existing over-limit rejection pattern.
+        }
+
+        $this->assertSame(0, FeedbackImage::query()->count());
+        $component->assertNotified();
     }
 
     public function test_admin_can_preview_a_feedback_image_from_the_list_page(): void
