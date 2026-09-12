@@ -14,6 +14,7 @@ use Filament\Notifications\Notification;
 use Filament\Support\Exceptions\Halt;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 class CreateGalleryImage extends CreateRecord
 {
@@ -79,10 +80,39 @@ class CreateGalleryImage extends CreateRecord
             throw new Halt;
         }
 
-        $records = $paths->map(fn (string $path): GalleryImage => GalleryImage::create([
+        $service = app(LandingMediaService::class);
+
+        [$succeeded, $failed] = $paths->partition(fn (string $path): bool => $service->existsOnDisk($path));
+
+        if ($failed->isNotEmpty()) {
+            Log::warning('Gallery image upload silently failed to reach storage.', [
+                'disk' => $service->disk(),
+                'paths' => $failed->values()->all(),
+            ]);
+        }
+
+        if ($succeeded->isEmpty()) {
+            Notification::make()
+                ->danger()
+                ->title('Upload failed')
+                ->body('None of the images could be saved to storage — please try again.')
+                ->send();
+
+            throw new Halt;
+        }
+
+        $records = $succeeded->map(fn (string $path): GalleryImage => GalleryImage::create([
             'image_path' => $path,
             'is_active' => $data['is_active'],
         ]));
+
+        if ($failed->isNotEmpty()) {
+            Notification::make()
+                ->warning()
+                ->title('Some images failed to upload')
+                ->body($failed->count().' of '.$paths->count().' images could not be saved to storage and were skipped.')
+                ->send();
+        }
 
         return $records->last();
     }

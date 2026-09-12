@@ -116,6 +116,31 @@ class LandingMediaService
     }
 
     /**
+     * Whether a path genuinely exists on the configured disk. Used to detect an upload
+     * that Filament thinks succeeded (it has a path string) but that never actually
+     * landed on S3 — e.g. a transient write failure swallowed by the disk's
+     * 'throw' => false config, which would otherwise silently coerce to an empty path.
+     */
+    public function existsOnDisk(?string $path): bool
+    {
+        if (blank($path)) {
+            return false;
+        }
+
+        try {
+            return Storage::disk($this->disk())->exists($path);
+        } catch (\Throwable $exception) {
+            Log::warning('Failed to check landing media asset existence.', [
+                'disk' => $this->disk(),
+                'path' => $path,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
      * Delete a stored image from the configured disk. Legacy bundled repo assets are left alone.
      */
     public function deleteAsset(?string $path): void
